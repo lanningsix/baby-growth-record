@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { RecordType } from '../types';
 import { generateJournalEntry } from '../services/api';
-import { Loader2, Sparkles } from 'lucide-react';
+import { Loader2, Sparkles, X } from 'lucide-react';
 import { useTranslation } from '../i18n';
 import { 
   Popup, 
@@ -33,11 +33,8 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
   const [fileList, setFileList] = useState<ExtendedImageUploadItem[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Date picker controls
   const [datePickerVisible, setDatePickerVisible] = useState(false);
 
-  // Reset state when opening
   useEffect(() => {
     if (isOpen) {
       setActiveTab(RecordType.PHOTO);
@@ -90,7 +87,6 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
             weight: values.weight ? parseFloat(values.weight) : undefined,
          };
       } else if (!values.title && activeTab !== RecordType.PHOTO) {
-          // For photo type, title is optional or can be defaulted
           payload.title = t('timeline.photo_memory');
       }
 
@@ -104,11 +100,10 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
     }
   };
 
-  // Mock upload to just store file object locally for the final submit
   const mockUpload = async (file: File): Promise<ImageUploadItem> => {
     return {
       url: URL.createObjectURL(file),
-      file: file, // Store original file in the extra property
+      file: file, 
     } as ExtendedImageUploadItem;
   };
 
@@ -117,16 +112,23 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
       visible={isOpen}
       onMaskClick={onClose}
       onClose={onClose}
-      bodyStyle={{ borderTopLeftRadius: '24px', borderTopRightRadius: '24px', minHeight: '60vh', maxHeight: '90vh' }}
+      bodyStyle={{ borderTopLeftRadius: '40px', borderTopRightRadius: '40px', minHeight: '70vh', maxHeight: '90vh' }}
     >
-      <div className="p-4 bg-white h-full flex flex-col">
-        <div className="flex justify-between items-center mb-4 px-2">
-           <h2 className="text-xl font-bold text-gray-800">{t('add_modal.title')}</h2>
-           <Button fill='none' onClick={onClose} color='danger'>{t('common.cancel')}</Button>
+      <div className="p-8 bg-white h-full flex flex-col">
+        <div className="flex justify-between items-center mb-8 px-1">
+           <h2 className="text-2xl font-black text-slate-800 tracking-tight">{t('add_modal.title')}</h2>
+           <button onClick={onClose} className="bg-slate-100 p-2 rounded-full hover:bg-slate-200 transition">
+               <X size={20} className="text-slate-500" />
+           </button>
         </div>
         
-        <div className="mb-4">
-            <CapsuleTabs activeKey={activeTab} onChange={setActiveTab}>
+        <div className="mb-8">
+            <CapsuleTabs 
+                activeKey={activeTab} 
+                onChange={setActiveTab} 
+                className="font-bold"
+                style={{ '--active-bg': '#f43f5e', '--tab-title-color': '#94a3b8' }}
+            >
                 <CapsuleTabs.Tab title={t('add_modal.tab_photo')} key={RecordType.PHOTO} />
                 <CapsuleTabs.Tab title={t('add_modal.tab_growth')} key={RecordType.GROWTH} />
                 <CapsuleTabs.Tab title={t('add_modal.tab_milestone')} key={RecordType.MILESTONE} />
@@ -138,18 +140,26 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
             form={form} 
             layout='horizontal' 
             onFinish={onFinish}
+            className="text-base"
             footer={
-              <Button block type='submit' color='primary' size='large' loading={isSubmitting} shape="rounded">
+              <Button 
+                block type='submit' color='primary' size='large' loading={isSubmitting} 
+                shape="rounded"
+                className="!bg-rose-500 !border-none shadow-xl shadow-rose-200 mt-8 font-bold h-14 !text-lg hover:!bg-rose-600 transition"
+              >
                 {t('add_modal.save_btn')}
               </Button>
             }
           >
-            <Form.Header>{t('add_modal.date_label')}</Form.Header>
+            <Form.Header>
+                <div className="text-xs font-bold uppercase text-slate-400 tracking-wider pl-2">{t('add_modal.date_label')}</div>
+            </Form.Header>
             <Form.Item 
                 name='date' 
                 trigger='onConfirm' 
                 onClick={() => setDatePickerVisible(true)}
                 arrow
+                className="bg-slate-50 rounded-2xl mb-6 border border-slate-100"
             >
               <DatePicker
                 visible={datePickerVisible}
@@ -157,51 +167,63 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
                 precision='minute'
                 max={new Date()}
               >
-                {value => value ? value.toLocaleString() : 'Select Date'}
+                {value => value ? <span className="font-bold text-slate-700">{value.toLocaleString()}</span> : 'Select Date'}
               </DatePicker>
             </Form.Item>
 
             {activeTab === RecordType.GROWTH ? (
                <>
-                 <Form.Header>{t('nav.growth')}</Form.Header>
-                 <Form.Item name='height' label={t('add_modal.height_label')}>
-                    <Input type='number' placeholder='0.0' />
-                 </Form.Item>
-                 <Form.Item name='weight' label={t('add_modal.weight_label')}>
-                    <Input type='number' placeholder='0.0' />
-                 </Form.Item>
+                 <Form.Header>
+                    <div className="text-xs font-bold uppercase text-slate-400 tracking-wider pl-2">{t('nav.growth')}</div>
+                 </Form.Header>
+                 <div className="bg-slate-50 rounded-3xl p-3 mb-2 border border-slate-100">
+                    <Form.Item name='height' label={<span className="font-bold text-slate-500">{t('add_modal.height_label')}</span>}>
+                        <Input type='number' placeholder='0.0' className="font-bold text-slate-800" />
+                    </Form.Item>
+                    <Form.Item name='weight' label={<span className="font-bold text-slate-500">{t('add_modal.weight_label')}</span>}>
+                        <Input type='number' placeholder='0.0' className="font-bold text-slate-800" />
+                    </Form.Item>
+                 </div>
                </>
             ) : (
                <>
-                 <Form.Item name='title' label={t('add_modal.title_label')} rules={[{ required: activeTab === RecordType.MILESTONE }]}>
-                    <Input placeholder={t('add_modal.title_placeholder')} />
-                 </Form.Item>
+                 <div className="bg-slate-50 rounded-3xl p-3 mb-6 border border-slate-100">
+                    <Form.Item name='title' label={<span className="font-bold text-slate-500">{t('add_modal.title_label')}</span>} rules={[{ required: activeTab === RecordType.MILESTONE }]}>
+                        <Input placeholder={t('add_modal.title_placeholder')} className="font-bold text-slate-800" />
+                    </Form.Item>
+                 </div>
 
-                 <Form.Item label={t('add_modal.photo_label')}>
+                 <div className="bg-slate-50 rounded-[2rem] p-6 mb-6 border border-slate-100">
+                    <div className="mb-4 text-sm font-bold text-slate-500 uppercase tracking-wide">{t('add_modal.photo_label')}</div>
                     <ImageUploader
                         value={fileList}
                         onChange={setFileList as any} 
                         upload={mockUpload}
                         maxCount={1}
                         preview={true}
+                        style={{'--cell-size': '110px'}}
+                        className="rounded-xl overflow-hidden"
                     />
-                 </Form.Item>
+                 </div>
 
                  <Form.Header>
-                    <div className="flex justify-between items-center">
-                        <span>{t('add_modal.journal_label')}</span>
-                        <span 
+                    <div className="flex justify-between items-center pl-2">
+                        <span className="text-xs font-bold uppercase text-slate-400 tracking-wider">{t('add_modal.journal_label')}</span>
+                        <button
+                            type="button" 
                             onClick={handleMagicCompose} 
-                            className="text-purple-600 text-xs flex items-center gap-1 bg-purple-50 px-2 py-1 rounded cursor-pointer"
+                            className="text-indigo-600 text-xs font-bold flex items-center gap-1.5 bg-indigo-50 px-3 py-1.5 rounded-full active:bg-indigo-100 transition hover:bg-indigo-100"
                         >
-                            {isGenerating ? <Loader2 className="animate-spin" size={12}/> : <Sparkles size={12}/>} AI
-                        </span>
+                            {isGenerating ? <Loader2 className="animate-spin" size={14}/> : <Sparkles size={14}/>} 
+                            AI Magic
+                        </button>
                     </div>
                  </Form.Header>
-                 <Form.Item name='description'>
+                 <Form.Item name='description' className="bg-slate-50 rounded-3xl p-3 border border-slate-100">
                     <TextArea 
                         placeholder={t('add_modal.describe_placeholder')} 
-                        autoSize={{ minRows: 3, maxRows: 6 }} 
+                        autoSize={{ minRows: 4, maxRows: 8 }} 
+                        className="text-slate-700 font-medium leading-relaxed"
                     />
                  </Form.Item>
                </>
