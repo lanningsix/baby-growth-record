@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { RecordType } from '../types';
 import { generateJournalEntry } from '../services/api';
-import { X, Loader2, Sparkles, Image as ImageIcon, Calendar } from 'lucide-react';
+import { X, Loader2, Sparkles, Image as ImageIcon, Calendar, Clock } from 'lucide-react';
 import { useTranslation } from '../i18n';
 
 interface Props {
@@ -13,10 +13,30 @@ interface Props {
 
 const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }) => {
   const { t, language } = useTranslation();
+  
+  // Initialize with local date and time
+  const getLocalDateStr = () => {
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+  };
+  
+  const getLocalTimeStr = () => {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const mins = String(now.getMinutes()).padStart(2, '0');
+      return `${hours}:${mins}`;
+  };
+
   const [activeTab, setActiveTab] = useState<RecordType>(RecordType.PHOTO);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  
+  const [date, setDate] = useState(getLocalDateStr());
+  const [time, setTime] = useState(getLocalTimeStr());
+
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -51,9 +71,14 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
     e.preventDefault();
     setIsSubmitting(true);
 
+    // Construct ISO string from local date and time inputs
+    const [y, m, d] = date.split('-').map(Number);
+    const [hours, minutes] = time.split(':').map(Number);
+    const dateTime = new Date(y, m - 1, d, hours, minutes);
+    
     const payload: any = {
       type: activeTab,
-      date: new Date(date).toISOString(),
+      date: dateTime.toISOString(),
       title,
       description,
       file: file, // Pass the raw file to the service
@@ -77,6 +102,9 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
       setPreviewUrl(null);
       setHeight('');
       setWeight('');
+      // Reset to current time
+      setDate(getLocalDateStr());
+      setTime(getLocalTimeStr());
       onClose();
     } catch (err) {
       console.error(err);
@@ -115,17 +143,31 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">{t('add_modal.date_label')}</label>
-               <div className="relative">
-                   <input
-                    type="date"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-pink-200 outline-none text-gray-700 pl-10"
-                   />
-                   <Calendar className="absolute left-3 top-3.5 text-gray-400" size={18}/>
-               </div>
+            <div className="flex gap-3">
+                <div className="flex-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('add_modal.date_label')}</label>
+                    <div className="relative">
+                        <input
+                            type="date"
+                            value={date}
+                            onChange={(e) => setDate(e.target.value)}
+                            className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-pink-200 outline-none text-gray-700 pl-10"
+                        />
+                        <Calendar className="absolute left-3 top-3.5 text-gray-400" size={18}/>
+                    </div>
+                </div>
+                <div className="w-1/3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('add_modal.time_label')}</label>
+                    <div className="relative">
+                        <input
+                            type="time"
+                            value={time}
+                            onChange={(e) => setTime(e.target.value)}
+                            className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-pink-200 outline-none text-gray-700 pl-10"
+                        />
+                        <Clock className="absolute left-3 top-3.5 text-gray-400" size={18}/>
+                    </div>
+                </div>
             </div>
 
             {activeTab === RecordType.GROWTH && (
