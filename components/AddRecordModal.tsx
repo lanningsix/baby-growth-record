@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { RecordType } from '../types';
-import { generateJournalEntry } from '../services/geminiService';
+import { generateJournalEntry } from '../services/api';
 import { X, Loader2, Sparkles, Image as ImageIcon, Calendar } from 'lucide-react';
 
 interface Props {

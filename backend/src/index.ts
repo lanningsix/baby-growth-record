@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { GoogleGenAI } from '@google/genai';
 
 // Define fallback types for Cloudflare Bindings if global types are missing
 type D1Database = any;
@@ -8,6 +9,7 @@ type R2Bucket = any;
 type Bindings = {
   DB: D1Database;
   BUCKET: R2Bucket;
+  GEMINI_API_KEY: string;
 };
 
 const app = new Hono<{ Bindings: Bindings }>();
@@ -75,13 +77,7 @@ app.post('/api/timeline', async (c) => {
       // Put object into R2
       await c.env.BUCKET.put(fileName, file);
       
-      // Construct public URL (Assuming Worker is also serving or R2 is public)
-      // For this setup, we will return a worker proxy URL or public R2 dev URL
-      // Here we assume the Worker handles retrieving it or a custom domain is set up
-      // To keep it simple, we'll store the filename and let the frontend request it via a proxy endpoint or assume a public bucket domain.
-      // NOTE: You need to connect a custom domain to your R2 bucket or make it public for direct access.
-      // For this demo, we assume public access is enabled on the bucket at a specific domain, OR we serve it via this worker.
-      // Let's use a placeholder logic that appends the worker url if needed, but here we store relative path.
+      // Construct relative URL to be served via proxy
       mediaUrl = `/api/media/${fileName}`; 
     }
 
@@ -113,6 +109,70 @@ app.post('/api/timeline', async (c) => {
 
   } catch (e: any) {
     return c.json({ error: e.message }, 500);
+  }
+});
+
+// --- AI Routes ---
+
+app.post('/api/ai/journal', async (c) => {
+  try {
+    const { imageBase64, context } = await c.req.json();
+    const apiKey = c.env.GEMINI_API_KEY;
+    
+    if (!apiKey) return c.json({ text: "AI service currently unavailable." });
+
+    const ai = new GoogleGenAI({ apiKey });
+    const parts: any[] = [];
+
+    if (imageBase64) {
+      // Remove data:image/jpeg;base64, prefix if present
+      const base64Data = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+      parts.push({
+        inlineData: {
+          data: base64Data,
+          mimeType: "image/jpeg"
+        }
+      });
+    }
+
+    const promptText = `
+      You are a warm, loving assistant helping a parent write a baby journal.
+      Context provided by parent: "${context || ''}".
+      ${imageBase64 ? "Please describe the photo and the moment cheerfully." : ""}
+      Write a short, sentimental, and cute journal entry (max 3 sentences).
+      Tone: Emotional, Happy, Cherishing.
+    `;
+
+    parts.push({ text: promptText });
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: { parts },
+    });
+
+    return c.json({ text: response.text });
+  } catch (error) {
+    console.error("Gemini API Error:", error);
+    return c.json({ text: "Could not generate entry." });
+  }
+});
+
+app.post('/api/ai/milestones', async (c) => {
+  try {
+    const { ageInMonths } = await c.req.json();
+    const apiKey = c.env.GEMINI_API_KEY;
+    
+    if (!apiKey) return c.json({ text: "" });
+
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `My baby is ${ageInMonths} months old. What are 3 key developmental milestones I should look out for right now? Keep it brief and bulleted. Return as Markdown.`,
+    });
+
+    return c.json({ text: response.text });
+  } catch (error) {
+    return c.json({ text: "" });
   }
 });
 

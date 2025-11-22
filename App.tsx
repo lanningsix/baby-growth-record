@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getTimeline, getProfile, addRecord } from './services/mockBackend';
-import { getMilestoneAdvice } from './services/geminiService';
+import { getTimeline, getProfile, addRecord, getMilestoneAdvice } from './services/api';
 import { TimelineEvent, BabyProfile } from './types';
 import TimelineItem from './components/TimelineItem';
 import AddRecordModal from './components/AddRecordModal';

@@ -12,7 +12,8 @@
     "wrangler": "^3.114.15"
   },
   "dependencies": {
-    "hono": "^4.10.6"
+    "hono": "^4.10.6",
+    "@google/genai": "^1.30.0"
   },
   "main": "index.js",
   "keywords": [],
