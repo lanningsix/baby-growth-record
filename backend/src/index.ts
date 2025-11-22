@@ -96,9 +96,40 @@ app.get('/api/timeline', async (c) => {
   const familyId = getFamilyId(c);
   if (!familyId) return c.json({ error: 'Family ID required' }, 400);
 
-  const { results } = await c.env.DB.prepare(
-    'SELECT * FROM events WHERE family_id = ? ORDER BY date DESC'
-  ).bind(familyId).all();
+  // Pagination and Filtering
+  const page = parseInt(c.req.query('page') || '1');
+  const limit = parseInt(c.req.query('limit') || '10');
+  const year = c.req.query('year');
+  const month = c.req.query('month');
+  const day = c.req.query('day');
+
+  const offset = (page - 1) * limit;
+
+  // Build Query
+  const conditions = ['family_id = ?'];
+  const params: any[] = [familyId];
+
+  if (year && year !== 'all') {
+    conditions.push("strftime('%Y', date) = ?");
+    params.push(year);
+  }
+  if (month && month !== 'all') {
+    conditions.push("strftime('%m', date) = ?");
+    params.push(month.padStart(2, '0'));
+  }
+  if (day && day !== 'all') {
+    conditions.push("strftime('%d', date) = ?");
+    params.push(day.padStart(2, '0'));
+  }
+
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
+  
+  const query = `SELECT * FROM events ${whereClause} ORDER BY date DESC LIMIT ? OFFSET ?`;
+  
+  // Bind params + limit/offset
+  const finalParams = [...params, limit, offset];
+
+  const { results } = await c.env.DB.prepare(query).bind(...finalParams).all();
   
   // Transform snake_case DB columns to camelCase for frontend
   const events = results.map((r: any) => ({

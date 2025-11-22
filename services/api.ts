@@ -32,8 +32,24 @@ export const updateProfile = async (data: Partial<BabyProfile>): Promise<void> =
   if (!res.ok) throw new Error('Failed to update profile');
 };
 
-export const getTimeline = async (): Promise<TimelineEvent[]> => {
-  const res = await fetch(`${API_BASE_URL}/api/timeline`, {
+export const getTimeline = async (
+  page = 1, 
+  limit = 10, 
+  filters?: { year?: string; month?: string; day?: string }
+): Promise<TimelineEvent[]> => {
+  
+  const params = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+  });
+
+  if (filters) {
+      if (filters.year) params.append('year', filters.year);
+      if (filters.month) params.append('month', filters.month);
+      if (filters.day) params.append('day', filters.day);
+  }
+
+  const res = await fetch(`${API_BASE_URL}/api/timeline?${params.toString()}`, {
     headers: getHeaders()
   });
   if (!res.ok) throw new Error('Failed to fetch timeline');
@@ -58,10 +74,11 @@ export const getProfile = async (): Promise<BabyProfile | null> => {
         name: data.name,
         birthDate: data.birth_date,
         gender: data.gender,
-        photoUrl: data.photo_url,
+        photo_url: data.photo_url,
+        photoUrl: data.photo_url, // Map snake_case to camelCase
         currentHeight: data.current_height,
         currentWeight: data.current_weight
-    };
+    } as BabyProfile;
   } catch (error) {
     console.error("Failed to fetch profile", error);
     return null;

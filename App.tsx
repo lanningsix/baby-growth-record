@@ -1,13 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { getTimeline, getProfile, addRecord, getMilestoneAdvice, updateProfile } from './services/api';
 import { TimelineEvent, BabyProfile } from './types';
 import TimelineItem from './components/TimelineItem';
 import AddRecordModal from './components/AddRecordModal';
 import GrowthChart from './components/GrowthChart';
 import Onboarding from './components/Onboarding';
-import { Plus, Home, LineChart, Settings, Users, Baby, LogOut, Copy, Check, Edit2, Save, User } from 'lucide-react';
+import ImageViewer from './components/ImageViewer';
+import { Plus, Home, LineChart, Settings, Users, Baby, LogOut, Copy, Check, Edit2, Save, User, Filter, Calendar, Loader2, RefreshCw } from 'lucide-react';
 
 const PARENT_ROLES = ['Mom', 'Dad', 'Grandma', 'Grandpa'];
+const PAGE_SIZE = 10;
 
 function App() {
   // Navigation State
@@ -21,6 +23,20 @@ function App() {
   const [familyId, setFamilyId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [myIdentity, setMyIdentity] = useState<string>('Mom');
+  
+  // Pagination & Filtering State
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [filterYear, setFilterYear] = useState<string>('all');
+  const [filterMonth, setFilterMonth] = useState<string>('all');
+  const [filterDay, setFilterDay] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(false);
+  const observerTarget = useRef<HTMLDivElement>(null);
+
+  // Image Viewer State
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   
   // Settings Editing State
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -41,44 +57,80 @@ function App() {
 
     if (storedId) {
       setFamilyId(storedId);
-      fetchData();
+      // Profile is needed for onboarding/settings, fetch once
+      getProfile().then(p => {
+          setProfile(p);
+          if(p) {
+            setEditName(p.name);
+            setEditDob(p.birthDate);
+            const ageMonths = Math.floor((new Date().getTime() - new Date(p.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
+            getMilestoneAdvice(ageMonths).then(setAiInsight);
+          }
+      });
     } else {
-      setLoading(false); // Stop global loading to show Onboarding
+      setLoading(false);
     }
   }, []);
 
-  // Fetch initial data
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [eventsData, profileData] = await Promise.all([
-        getTimeline(),
-        getProfile()
-      ]);
-      setEvents(eventsData);
-      setProfile(profileData);
-      
-      // Pre-fill edit fields
-      if (profileData) {
-          setEditName(profileData.name);
-          setEditDob(profileData.birthDate);
+  // Reset pagination when filters or view changes
+  useEffect(() => {
+      if(familyId) {
+          setPage(1);
+          setEvents([]);
+          setHasMore(true);
+          fetchEvents(1, true);
       }
+  }, [familyId, filterYear, filterMonth, filterDay]);
+
+  const fetchEvents = async (pageNum: number, reset = false) => {
+    if (!familyId) return;
+    if (reset) setLoading(true);
+    else setLoadingMore(true);
+
+    try {
+      const filters = {
+          year: filterYear !== 'all' ? filterYear : undefined,
+          month: filterMonth !== 'all' ? filterMonth : undefined,
+          day: filterDay !== 'all' ? filterDay : undefined,
+      };
+
+      const newEvents = await getTimeline(pageNum, PAGE_SIZE, filters);
       
-      // Get simple AI advice based on age
-      if(profileData) {
-        // Calculate age in months roughly
-        const ageMonths = Math.floor((new Date().getTime() - new Date(profileData.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
-        getMilestoneAdvice(ageMonths).then(setAiInsight);
+      if (newEvents.length < PAGE_SIZE) {
+          setHasMore(false);
       }
 
+      setEvents(prev => reset ? newEvents : [...prev, ...newEvents]);
     } catch (error) {
-      console.error("Failed to load data", error);
-      // If fetch fails dramatically (e.g. 404 profile), maybe clear ID?
-      // For now, just stay loaded but empty
+      console.error("Failed to load timeline", error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
+
+  // Infinite Scroll Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          setPage(prev => {
+              const nextPage = prev + 1;
+              fetchEvents(nextPage);
+              return nextPage;
+          });
+        }
+      },
+      { threshold: 0.5 }
+    );
+
+    if (observerTarget.current) {
+      observer.observe(observerTarget.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading]);
+
 
   const handleOnboardingComplete = () => {
     const storedId = localStorage.getItem('familyId');
@@ -86,7 +138,7 @@ function App() {
     if (storedName) setMyIdentity(storedName);
     if (storedId) {
       setFamilyId(storedId);
-      fetchData();
+      // Triggers existing useEffect
     }
   };
 
@@ -107,10 +159,14 @@ function App() {
   };
 
   const handleSaveRecord = async (recordData: any) => {
+    // Optimistic or just refresh top? 
+    // Since we have pagination, appending to top is safest if we are on page 1.
+    // If we are filtered, we should maybe reload.
     const newRecord = await addRecord(recordData);
+    
+    // If currently showing all or matching filter, add to top
     setEvents(prev => [newRecord, ...prev]);
     
-    // Refresh profile if it was a growth record to update header stats
     if (recordData.type === 'GROWTH') {
       const p = await getProfile();
       setProfile(p);
@@ -124,7 +180,6 @@ function App() {
               name: editName,
               birthDate: editDob
           });
-          // Update local state
           if(profile) {
               setProfile({...profile, name: editName, birthDate: editDob});
           }
@@ -152,11 +207,22 @@ function App() {
     return years > 0 ? `${years}y ${remainingMonths}m` : `${months} months`;
   };
 
+  // Helpers for filters
+  const years = Array.from({length: 5}, (_, i) => new Date().getFullYear() - i); // Last 5 years
+  const months = Array.from({length: 12}, (_, i) => i + 1);
+  const days = Array.from({length: 31}, (_, i) => i + 1);
+
+  const resetFilters = () => {
+      setFilterYear('all');
+      setFilterMonth('all');
+      setFilterDay('all');
+  };
+
   if (!familyId) {
     return <Onboarding onComplete={handleOnboardingComplete} />;
   }
 
-  if (loading) {
+  if (loading && page === 1) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-rose-50">
         <div className="flex flex-col items-center gap-4">
@@ -194,63 +260,132 @@ function App() {
       </div>
 
       {/* Mobile Header / Profile Summary */}
-      <div className="bg-white p-6 rounded-b-[40px] shadow-sm mb-6">
+      <div className="bg-white pt-6 pb-6 px-6 rounded-b-[40px] shadow-sm mb-6 sticky top-0 z-30">
         <div className="flex items-center gap-4 max-w-3xl mx-auto">
-          <div className="w-20 h-20 rounded-full bg-rose-100 border-4 border-white shadow-md overflow-hidden flex items-center justify-center text-3xl relative">
+          <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-rose-100 border-4 border-white shadow-md overflow-hidden flex items-center justify-center text-3xl relative shrink-0">
              {profile?.photoUrl ? <img src={profile.photoUrl} className="w-full h-full object-cover" alt="baby"/> : "👶"}
           </div>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-800">{profile?.name}</h1>
-            <p className="text-rose-500 font-medium text-sm">{profile && calculateAge(profile.birthDate)} old</p>
-            <div className="flex gap-4 mt-2">
-                <div className="bg-blue-50 px-3 py-1 rounded-lg text-xs font-bold text-blue-600">
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-start">
+                <div>
+                    <h1 className="text-xl md:text-2xl font-bold text-gray-800 truncate">{profile?.name}</h1>
+                    <p className="text-rose-500 font-medium text-xs md:text-sm">{profile && calculateAge(profile.birthDate)} old</p>
+                </div>
+                
+                {currentView === 'timeline' && (
+                    <button 
+                        onClick={() => setShowFilters(!showFilters)}
+                        className={`p-2 rounded-full transition ${showFilters ? 'bg-rose-100 text-rose-600' : 'bg-gray-50 text-gray-400'}`}
+                    >
+                        <Filter size={20} />
+                    </button>
+                )}
+            </div>
+            
+            <div className="flex gap-3 mt-2">
+                <div className="bg-blue-50 px-2 py-1 rounded-lg text-[10px] md:text-xs font-bold text-blue-600 whitespace-nowrap">
                     {profile?.currentHeight} cm
                 </div>
-                <div className="bg-purple-50 px-3 py-1 rounded-lg text-xs font-bold text-purple-600">
+                <div className="bg-purple-50 px-2 py-1 rounded-lg text-[10px] md:text-xs font-bold text-purple-600 whitespace-nowrap">
                     {profile?.currentWeight} kg
                 </div>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Main Content Area */}
-      <div className="max-w-3xl mx-auto px-4">
         
-        {/* AI Insight Card */}
-        {currentView === 'timeline' && aiInsight && (
-            <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg mb-8 relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 opacity-20">
-                    <Baby size={100} />
-                </div>
-                <h3 className="font-bold mb-2 text-indigo-100 uppercase tracking-wider text-xs">AI Development Tracker</h3>
-                <div className="prose prose-invert prose-sm max-w-none">
-                   {/* Simple markdown rendering for the list */}
-                   {aiInsight.split('\n').map((line, i) => (
-                       <p key={i} className="mb-1">{line.replace('*', '•')}</p>
-                   ))}
+        {/* Expandable Filters */}
+        {showFilters && currentView === 'timeline' && (
+            <div className="max-w-3xl mx-auto mt-4 pt-4 border-t border-gray-100 animate-in slide-in-from-top-2 duration-200">
+                <div className="flex flex-wrap gap-2 items-center">
+                    <select 
+                        value={filterYear} 
+                        onChange={e => setFilterYear(e.target.value)}
+                        className="bg-gray-50 text-sm p-2 rounded-lg border-none outline-none font-semibold text-gray-600"
+                    >
+                        <option value="all">Year: All</option>
+                        {years.map(y => <option key={y} value={y}>{y}</option>)}
+                    </select>
+
+                    <select 
+                        value={filterMonth} 
+                        onChange={e => setFilterMonth(e.target.value)}
+                        className="bg-gray-50 text-sm p-2 rounded-lg border-none outline-none font-semibold text-gray-600"
+                    >
+                        <option value="all">Month: All</option>
+                        {months.map(m => <option key={m} value={m}>{new Date(0, m-1).toLocaleString('default', {month: 'short'})}</option>)}
+                    </select>
+
+                    <select 
+                        value={filterDay} 
+                        onChange={e => setFilterDay(e.target.value)}
+                        className="bg-gray-50 text-sm p-2 rounded-lg border-none outline-none font-semibold text-gray-600"
+                    >
+                        <option value="all">Day: All</option>
+                        {days.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+
+                    <button onClick={resetFilters} className="ml-auto p-2 text-gray-400 hover:text-rose-500">
+                        <RefreshCw size={16} />
+                    </button>
                 </div>
             </div>
         )}
+      </div>
 
+      {/* Main Content Area */}
+      <div className="max-w-3xl mx-auto px-4 min-h-[50vh]">
+        
         {currentView === 'timeline' && (
           <div className="space-y-2 pb-20">
+            {/* AI Insight only shows on page 1 and no filters active */}
+             {aiInsight && page === 1 && filterYear === 'all' && (
+                <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-6 text-white shadow-lg mb-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-4 opacity-20">
+                        <Baby size={100} />
+                    </div>
+                    <h3 className="font-bold mb-2 text-indigo-100 uppercase tracking-wider text-xs">AI Development Tracker</h3>
+                    <div className="prose prose-invert prose-sm max-w-none">
+                    {aiInsight.split('\n').map((line, i) => (
+                        <p key={i} className="mb-1">{line.replace('*', '•')}</p>
+                    ))}
+                    </div>
+                </div>
+            )}
+
              <h2 className="text-lg font-bold text-gray-700 mb-4 ml-2">Timeline</h2>
-            {events.length === 0 ? (
+            
+            {events.length === 0 && !loading ? (
                <div className="text-center py-10 text-gray-400">
-                 <p>No memories yet. Tap + to add one!</p>
+                 <p>No memories found.</p>
+                 {(filterYear !== 'all' || filterMonth !== 'all' || filterDay !== 'all') && (
+                     <button onClick={resetFilters} className="text-rose-500 font-bold mt-2 text-sm">Clear Filters</button>
+                 )}
                </div>
             ) : (
                events.map(event => (
-                 <TimelineItem key={event.id} event={event} />
+                 <TimelineItem 
+                    key={event.id} 
+                    event={event} 
+                    onImageClick={(id) => {
+                        setSelectedEventId(id);
+                        setViewerOpen(true);
+                    }}
+                 />
                ))
             )}
+
+            {/* Infinite Scroll Loader */}
+            <div ref={observerTarget} className="h-20 flex items-center justify-center w-full">
+                 {loadingMore && <Loader2 className="animate-spin text-rose-400" />}
+                 {!hasMore && events.length > 0 && <span className="text-xs text-gray-300 font-medium">End of timeline</span>}
+            </div>
           </div>
         )}
 
         {currentView === 'growth' && (
            <div className="pb-20">
                <h2 className="text-lg font-bold text-gray-700 mb-4">Growth Tracker</h2>
+               {/* Pass all events? Ideally endpoint should be separate for growth, but filtering existing works for small apps */}
                <GrowthChart events={events} />
            </div>
         )}
@@ -398,6 +533,13 @@ function App() {
         onClose={() => setIsModalOpen(false)} 
         onSave={handleSaveRecord}
         authorName={myIdentity}
+      />
+      
+      <ImageViewer 
+         isOpen={viewerOpen}
+         onClose={() => setViewerOpen(false)}
+         initialEventId={selectedEventId}
+         events={events} // Pass current list for navigation
       />
 
     </div>
