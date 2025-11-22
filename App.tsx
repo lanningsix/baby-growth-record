@@ -6,12 +6,15 @@ import AddRecordModal from './components/AddRecordModal';
 import GrowthChart from './components/GrowthChart';
 import Onboarding from './components/Onboarding';
 import ImageViewer from './components/ImageViewer';
-import { Plus, Home, LineChart, Settings, Users, Baby, LogOut, Copy, Check, Edit2, Save, User, Filter, Calendar, Loader2, RefreshCw } from 'lucide-react';
+import { useTranslation, Language } from './i18n';
+import { Plus, Home, LineChart, Settings, Users, Baby, LogOut, Copy, Check, Edit2, Save, User, Filter, Calendar, Loader2, RefreshCw, Globe } from 'lucide-react';
 
 const PARENT_ROLES = ['Mom', 'Dad', 'Grandma', 'Grandpa'];
 const PAGE_SIZE = 10;
 
 function App() {
+  const { t, language, setLanguage, locale } = useTranslation();
+
   // Navigation State
   const [currentView, setCurrentView] = useState<'timeline' | 'growth' | 'settings'>('timeline');
 
@@ -64,13 +67,14 @@ function App() {
             setEditName(p.name);
             setEditDob(p.birthDate);
             const ageMonths = Math.floor((new Date().getTime() - new Date(p.birthDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44));
-            getMilestoneAdvice(ageMonths).then(setAiInsight);
+            // Pass current language to AI service
+            getMilestoneAdvice(ageMonths, language).then(setAiInsight);
           }
       });
     } else {
       setLoading(false);
     }
-  }, []);
+  }, [language]); // Re-fetch insight if language changes
 
   // Reset pagination when filters or view changes
   useEffect(() => {
@@ -204,7 +208,15 @@ function App() {
     const months = Math.floor(diff / (1000 * 60 * 60 * 24 * 30.44));
     const years = Math.floor(months / 12);
     const remainingMonths = months % 12;
-    return years > 0 ? `${years}y ${remainingMonths}m` : `${months} months`;
+    
+    // Simple localization for age (could be improved in i18n)
+    const suffixY = language === 'zh' ? '岁' : (language === 'ja' ? '歳' : (language === 'ko' ? '세' : 'y'));
+    const suffixM = language === 'zh' ? '个月' : (language === 'ja' ? 'ヶ月' : (language === 'ko' ? '개월' : 'm'));
+    
+    if(language === 'en') {
+        return years > 0 ? `${years}y ${remainingMonths}m` : `${months} months`;
+    }
+    return years > 0 ? `${years}${suffixY} ${remainingMonths}${suffixM}` : `${months}${suffixM}`;
   };
 
   // Helpers for filters
@@ -227,7 +239,7 @@ function App() {
       <div className="min-h-screen flex items-center justify-center bg-rose-50">
         <div className="flex flex-col items-center gap-4">
             <div className="animate-bounce text-4xl">👶</div>
-            <p className="text-rose-400 font-semibold animate-pulse">Loading LittleSteps...</p>
+            <p className="text-rose-400 font-semibold animate-pulse">{t('loading')}</p>
         </div>
       </div>
     );
@@ -242,13 +254,13 @@ function App() {
             <Baby />
         </div>
         <nav className="flex flex-col gap-6">
-            <button onClick={() => setCurrentView('timeline')} className={`p-3 rounded-xl transition ${currentView === 'timeline' ? 'bg-rose-100 text-rose-600' : 'text-gray-400 hover:bg-gray-50'}`}>
+            <button title={t('nav.home')} onClick={() => setCurrentView('timeline')} className={`p-3 rounded-xl transition ${currentView === 'timeline' ? 'bg-rose-100 text-rose-600' : 'text-gray-400 hover:bg-gray-50'}`}>
                 <Home size={24} />
             </button>
-            <button onClick={() => setCurrentView('growth')} className={`p-3 rounded-xl transition ${currentView === 'growth' ? 'bg-rose-100 text-rose-600' : 'text-gray-400 hover:bg-gray-50'}`}>
+            <button title={t('nav.growth')} onClick={() => setCurrentView('growth')} className={`p-3 rounded-xl transition ${currentView === 'growth' ? 'bg-rose-100 text-rose-600' : 'text-gray-400 hover:bg-gray-50'}`}>
                 <LineChart size={24} />
             </button>
-            <button onClick={() => setCurrentView('settings')} className={`p-3 rounded-xl transition ${currentView === 'settings' ? 'bg-rose-100 text-rose-600' : 'text-gray-400 hover:bg-gray-50'}`}>
+            <button title={t('nav.settings')} onClick={() => setCurrentView('settings')} className={`p-3 rounded-xl transition ${currentView === 'settings' ? 'bg-rose-100 text-rose-600' : 'text-gray-400 hover:bg-gray-50'}`}>
                 <Settings size={24} />
             </button>
         </nav>
@@ -302,7 +314,7 @@ function App() {
                         onChange={e => setFilterYear(e.target.value)}
                         className="bg-gray-50 text-sm p-2 rounded-lg border-none outline-none font-semibold text-gray-600"
                     >
-                        <option value="all">Year: All</option>
+                        <option value="all">{t('filters.year')}: {t('filters.all')}</option>
                         {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
 
@@ -311,8 +323,8 @@ function App() {
                         onChange={e => setFilterMonth(e.target.value)}
                         className="bg-gray-50 text-sm p-2 rounded-lg border-none outline-none font-semibold text-gray-600"
                     >
-                        <option value="all">Month: All</option>
-                        {months.map(m => <option key={m} value={m}>{new Date(0, m-1).toLocaleString('default', {month: 'short'})}</option>)}
+                        <option value="all">{t('filters.month')}: {t('filters.all')}</option>
+                        {months.map(m => <option key={m} value={m}>{new Date(0, m-1).toLocaleString(locale, {month: 'short'})}</option>)}
                     </select>
 
                     <select 
@@ -320,7 +332,7 @@ function App() {
                         onChange={e => setFilterDay(e.target.value)}
                         className="bg-gray-50 text-sm p-2 rounded-lg border-none outline-none font-semibold text-gray-600"
                     >
-                        <option value="all">Day: All</option>
+                        <option value="all">{t('filters.day')}: {t('filters.all')}</option>
                         {days.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
 
@@ -343,7 +355,7 @@ function App() {
                     <div className="absolute top-0 right-0 p-4 opacity-20">
                         <Baby size={100} />
                     </div>
-                    <h3 className="font-bold mb-2 text-indigo-100 uppercase tracking-wider text-xs">AI Development Tracker</h3>
+                    <h3 className="font-bold mb-2 text-indigo-100 uppercase tracking-wider text-xs">{t('timeline.ai_insight_title')}</h3>
                     <div className="prose prose-invert prose-sm max-w-none">
                     {aiInsight.split('\n').map((line, i) => (
                         <p key={i} className="mb-1">{line.replace('*', '•')}</p>
@@ -352,13 +364,13 @@ function App() {
                 </div>
             )}
 
-             <h2 className="text-lg font-bold text-gray-700 mb-4 ml-2">Timeline</h2>
+             <h2 className="text-lg font-bold text-gray-700 mb-4 ml-2">{t('timeline.title')}</h2>
             
             {events.length === 0 && !loading ? (
                <div className="text-center py-10 text-gray-400">
-                 <p>No memories found.</p>
+                 <p>{t('timeline.no_memories')}</p>
                  {(filterYear !== 'all' || filterMonth !== 'all' || filterDay !== 'all') && (
-                     <button onClick={resetFilters} className="text-rose-500 font-bold mt-2 text-sm">Clear Filters</button>
+                     <button onClick={resetFilters} className="text-rose-500 font-bold mt-2 text-sm">{t('timeline.clear_filters')}</button>
                  )}
                </div>
             ) : (
@@ -377,15 +389,14 @@ function App() {
             {/* Infinite Scroll Loader */}
             <div ref={observerTarget} className="h-20 flex items-center justify-center w-full">
                  {loadingMore && <Loader2 className="animate-spin text-rose-400" />}
-                 {!hasMore && events.length > 0 && <span className="text-xs text-gray-300 font-medium">End of timeline</span>}
+                 {!hasMore && events.length > 0 && <span className="text-xs text-gray-300 font-medium">{t('timeline.end_of_timeline')}</span>}
             </div>
           </div>
         )}
 
         {currentView === 'growth' && (
            <div className="pb-20">
-               <h2 className="text-lg font-bold text-gray-700 mb-4">Growth Tracker</h2>
-               {/* Pass all events? Ideally endpoint should be separate for growth, but filtering existing works for small apps */}
+               <h2 className="text-lg font-bold text-gray-700 mb-4">{t('growth.title')}</h2>
                <GrowthChart events={events} />
            </div>
         )}
@@ -393,19 +404,47 @@ function App() {
         {currentView === 'settings' && (
             <div className="pb-24 space-y-6">
                 
+                {/* Language Selector */}
+                <div className="bg-white rounded-2xl shadow-sm p-6">
+                    <div className="flex items-center gap-2 mb-4 text-gray-800">
+                        <Globe size={20} className="text-gray-500"/>
+                        <h2 className="text-xl font-bold">{t('settings.language')}</h2>
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                        {[
+                            { code: 'en', label: 'English' },
+                            { code: 'zh', label: '中文' },
+                            { code: 'ja', label: '日本語' },
+                            { code: 'ko', label: '한국어' }
+                        ].map(lang => (
+                            <button
+                                key={lang.code}
+                                onClick={() => setLanguage(lang.code as Language)}
+                                className={`px-4 py-2 rounded-full text-sm font-bold border transition ${
+                                    language === lang.code 
+                                    ? 'bg-gray-800 text-white border-gray-800' 
+                                    : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+                                }`}
+                            >
+                                {lang.label}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 {/* Baby Profile Settings */}
                 <div className="bg-white rounded-2xl shadow-sm p-6">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-xl font-bold text-gray-800">Baby Profile</h2>
+                        <h2 className="text-xl font-bold text-gray-800">{t('settings.baby_profile')}</h2>
                         {!isEditingProfile ? (
                             <button onClick={() => setIsEditingProfile(true)} className="p-2 text-gray-400 hover:bg-gray-50 rounded-full transition">
                                 <Edit2 size={18} />
                             </button>
                         ) : (
                             <div className="flex gap-2">
-                                <button onClick={() => setIsEditingProfile(false)} className="px-3 py-1 text-sm text-gray-500">Cancel</button>
+                                <button onClick={() => setIsEditingProfile(false)} className="px-3 py-1 text-sm text-gray-500">{t('common.cancel')}</button>
                                 <button onClick={handleSaveProfile} disabled={isSavingProfile} className="px-3 py-1 bg-rose-500 text-white text-sm rounded-lg shadow-sm">
-                                    {isSavingProfile ? "Saving..." : "Save"}
+                                    {isSavingProfile ? t('common.saving') : t('common.save')}
                                 </button>
                             </div>
                         )}
@@ -413,7 +452,7 @@ function App() {
                     
                     <div className="space-y-4">
                         <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Name</label>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">{t('settings.name')}</label>
                             {isEditingProfile ? (
                                 <input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full p-2 bg-gray-50 rounded-lg border border-gray-200" />
                             ) : (
@@ -421,7 +460,7 @@ function App() {
                             )}
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Date of Birth</label>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">{t('settings.dob')}</label>
                              {isEditingProfile ? (
                                 <input type="date" value={editDob} onChange={e => setEditDob(e.target.value)} className="w-full p-2 bg-gray-50 rounded-lg border border-gray-200" />
                             ) : (
@@ -433,12 +472,12 @@ function App() {
 
                  {/* Parent / User Settings */}
                  <div className="bg-white rounded-2xl shadow-sm p-6">
-                    <h2 className="text-xl font-bold text-gray-800 mb-4">My Identity</h2>
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">{t('settings.my_identity')}</h2>
                     <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 mb-4">
                         <div className="flex gap-4 items-start">
                              <div className="p-3 bg-blue-100 text-blue-600 rounded-full mt-1"><User size={24}/></div>
                              <div className="flex-1">
-                                 <label className="block text-xs font-bold text-blue-400 uppercase mb-2">Display Name</label>
+                                 <label className="block text-xs font-bold text-blue-400 uppercase mb-2">{t('settings.display_name')}</label>
                                  
                                  {/* Quick Select Chips */}
                                  <div className="flex gap-2 mb-3 flex-wrap">
@@ -469,7 +508,7 @@ function App() {
                                         <Save size={18} />
                                     </button>
                                  </div>
-                                 <p className="text-xs text-blue-400 mt-2">This name will appear on memory cards you create.</p>
+                                 <p className="text-xs text-blue-400 mt-2">{t('settings.display_name_desc')}</p>
                              </div>
                         </div>
                     </div>
@@ -477,26 +516,26 @@ function App() {
 
                 {/* Family Settings */}
                 <div className="bg-white rounded-2xl shadow-sm p-6">
-                    <h2 className="text-xl font-bold mb-6">Family Connection</h2>
+                    <h2 className="text-xl font-bold mb-6">{t('settings.family_connection')}</h2>
                     
                     <div className="space-y-6">
                         <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                            <p className="text-xs font-bold text-gray-400 uppercase mb-2">Your Family ID</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase mb-2">{t('settings.family_id_label')}</p>
                             <div className="flex items-center justify-between">
                                 <code className="text-sm font-mono bg-white px-2 py-1 rounded border text-gray-600 truncate max-w-[200px]">{familyId}</code>
                                 <button onClick={handleCopyId} className="text-rose-500 hover:text-rose-600 flex items-center gap-1 text-sm font-bold">
                                     {copied ? <Check size={16} /> : <Copy size={16} />}
-                                    {copied ? "Copied" : "Copy"}
+                                    {copied ? t('common.copied') : t('common.copy')}
                                 </button>
                             </div>
-                            <p className="text-xs text-gray-400 mt-2">Share this ID with family members to let them join.</p>
+                            <p className="text-xs text-gray-400 mt-2">{t('settings.share_hint')}</p>
                         </div>
 
                         <button 
                           onClick={handleLogout}
                           className="w-full py-3 border border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-50 transition"
                         >
-                          Log Out / Switch Family
+                          {t('settings.logout')}
                         </button>
                     </div>
                 </div>
@@ -516,15 +555,15 @@ function App() {
       <div className="md:hidden fixed bottom-0 left-0 w-full bg-white/90 backdrop-blur-lg border-t border-gray-200 flex justify-around py-4 pb-8 z-20">
          <button onClick={() => setCurrentView('timeline')} className={`flex flex-col items-center gap-1 ${currentView === 'timeline' ? 'text-rose-500' : 'text-gray-400'}`}>
             <Home size={24} fill={currentView === 'timeline' ? "currentColor" : "none"} />
-            <span className="text-[10px] font-bold">Home</span>
+            <span className="text-[10px] font-bold">{t('nav.home')}</span>
          </button>
          <button onClick={() => setCurrentView('growth')} className={`flex flex-col items-center gap-1 ${currentView === 'growth' ? 'text-rose-500' : 'text-gray-400'}`}>
             <LineChart size={24} />
-            <span className="text-[10px] font-bold">Growth</span>
+            <span className="text-[10px] font-bold">{t('nav.growth')}</span>
          </button>
          <button onClick={() => setCurrentView('settings')} className={`flex flex-col items-center gap-1 ${currentView === 'settings' ? 'text-rose-500' : 'text-gray-400'}`}>
             <Settings size={24} />
-            <span className="text-[10px] font-bold">Settings</span>
+            <span className="text-[10px] font-bold">{t('nav.settings')}</span>
          </button>
       </div>
 

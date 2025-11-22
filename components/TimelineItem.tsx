@@ -1,6 +1,7 @@
 import React from 'react';
 import { TimelineEvent, RecordType } from '../types';
 import { Ruler, Scale, Trophy, Camera, StickyNote, User, Calendar as CalendarIcon } from 'lucide-react';
+import { useTranslation } from '../i18n';
 
 interface Props {
   event: TimelineEvent;
@@ -8,13 +9,15 @@ interface Props {
 }
 
 const TimelineItem: React.FC<Props> = ({ event, onImageClick }) => {
+  const { t, locale } = useTranslation();
+  
   const dateObj = new Date(event.date);
-  const dateStr = dateObj.toLocaleDateString('en-US', {
+  const dateStr = dateObj.toLocaleDateString(locale, {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
   });
-  const timeStr = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  const timeStr = dateObj.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
   const getIcon = () => {
     switch (event.type) {
@@ -41,7 +44,7 @@ const TimelineItem: React.FC<Props> = ({ event, onImageClick }) => {
                 </span>
                 <span className="text-[10px] text-gray-400">{timeStr}</span>
             </div>
-            <h3 className="text-lg font-bold text-gray-800">{event.title || (event.type === 'PHOTO' ? 'Photo Memory' : event.type)}</h3>
+            <h3 className="text-lg font-bold text-gray-800">{event.title || (event.type === 'PHOTO' ? t('timeline.photo_memory') : event.type)}</h3>
           </div>
           {event.growthData && (
              <div className="flex gap-2 text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-lg shrink-0">
@@ -64,7 +67,7 @@ const TimelineItem: React.FC<Props> = ({ event, onImageClick }) => {
             />
             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
                  <div className="opacity-0 group-hover:opacity-100 bg-black/50 text-white px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm transition-opacity">
-                     Tap to view
+                     {t('timeline.tap_to_view')}
                  </div>
             </div>
           </div>
@@ -79,7 +82,7 @@ const TimelineItem: React.FC<Props> = ({ event, onImageClick }) => {
         <div className="flex items-center justify-between border-t pt-2 border-gray-100">
            <div className="flex items-center gap-1 text-xs text-gray-400">
              <User size={12} />
-             <span>Added by {event.author}</span>
+             <span>{t('timeline.added_by')} {event.author}</span>
            </div>
            {event.tags && event.tags.length > 0 && (
              <div className="flex gap-1">

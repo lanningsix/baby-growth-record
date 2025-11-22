@@ -121,13 +121,14 @@ export const addRecord = async (record: any): Promise<TimelineEvent> => {
 
 export const generateJournalEntry = async (
   imageBase64: string | undefined,
-  context: string
+  context: string,
+  lang: string = 'en'
 ): Promise<string> => {
   try {
     const res = await fetch(`${API_BASE_URL}/api/ai/journal`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify({ imageBase64, context })
+      body: JSON.stringify({ imageBase64, context, lang })
     });
     
     if (!res.ok) return "Could not generate entry.";
@@ -139,12 +140,12 @@ export const generateJournalEntry = async (
   }
 };
 
-export const getMilestoneAdvice = async (ageInMonths: number): Promise<string> => {
+export const getMilestoneAdvice = async (ageInMonths: number, lang: string = 'en'): Promise<string> => {
   try {
       const res = await fetch(`${API_BASE_URL}/api/ai/milestones`, {
         method: 'POST',
         headers: getHeaders(),
-        body: JSON.stringify({ ageInMonths })
+        body: JSON.stringify({ ageInMonths, lang })
       });
       if (!res.ok) return "";
       const data = await res.json();

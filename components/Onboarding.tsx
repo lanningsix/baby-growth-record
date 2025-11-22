@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { createFamily, getProfile } from '../services/api';
 import { Loader2, Baby, ArrowRight, Heart, Calendar, User, Type } from 'lucide-react';
+import { useTranslation } from '../i18n';
 
 interface Props {
   onComplete: () => void;
@@ -9,6 +10,7 @@ interface Props {
 const ROLES = ['Mom', 'Dad', 'Grandma', 'Grandpa'];
 
 const Onboarding: React.FC<Props> = ({ onComplete }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'create' | 'join'>('create');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -37,7 +39,7 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
       onComplete();
     } catch (err) {
       console.error(err);
-      setError('Failed to create family. Please try again.');
+      setError(t('onboarding.error_create'));
     } finally {
       setIsLoading(false);
     }
@@ -60,11 +62,11 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
         onComplete();
       } else {
         localStorage.removeItem('familyId');
-        setError('Invalid Family ID. Could not find a family.');
+        setError(t('onboarding.error_join'));
       }
     } catch (err) {
       localStorage.removeItem('familyId');
-      setError('Connection error.');
+      setError(t('onboarding.connection_error'));
     } finally {
       setIsLoading(false);
     }
@@ -81,8 +83,8 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
           <div className="w-16 h-16 bg-rose-500 text-white rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-rose-200">
             <Baby size={32} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">LittleSteps</h1>
-          <p className="text-gray-500">Start your baby's digital journal</p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">{t('onboarding.title')}</h1>
+          <p className="text-gray-500">{t('onboarding.subtitle')}</p>
         </div>
 
         <div className="relative z-10">
@@ -93,7 +95,7 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
                 activeTab === 'create' ? 'bg-white text-rose-500 shadow-sm' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              New Family
+              {t('onboarding.new_family')}
             </button>
             <button
               onClick={() => { setActiveTab('join'); setError(''); }}
@@ -101,7 +103,7 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
                 activeTab === 'join' ? 'bg-white text-rose-500 shadow-sm' : 'text-gray-400 hover:text-gray-600'
               }`}
             >
-              Join Existing
+              {t('onboarding.join_existing')}
             </button>
           </div>
 
@@ -114,7 +116,7 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
           {activeTab === 'create' ? (
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Baby's Details</label>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">{t('onboarding.baby_details')}</label>
                 <div className="space-y-3">
                     <div className="relative">
                         <input
@@ -122,7 +124,7 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
                         value={babyName}
                         onChange={(e) => setBabyName(e.target.value)}
                         className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-rose-200 outline-none pl-10"
-                        placeholder="Baby's Name"
+                        placeholder={t('onboarding.baby_name_placeholder')}
                         required
                         />
                         <Baby className="absolute left-3 top-3.5 text-gray-400" size={18} />
@@ -151,7 +153,7 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
                                     : 'border-transparent bg-gray-50 text-gray-500 hover:bg-gray-100'
                                 }`}
                             >
-                                {g}
+                                {t(`common.${g}`)}
                             </button>
                         ))}
                     </div>
@@ -159,7 +161,7 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
               </div>
 
               <div className="pt-2">
-                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">Your Identity</label>
+                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1 ml-1">{t('onboarding.your_identity')}</label>
                  <div className="flex gap-2 mb-2 overflow-x-auto no-scrollbar pb-1">
                     {ROLES.map(role => (
                         <button
@@ -182,7 +184,7 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
                       value={parentName}
                       onChange={(e) => setParentName(e.target.value)}
                       className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-rose-200 outline-none pl-10"
-                      placeholder="e.g. Mom, Dad, Auntie Sue"
+                      placeholder={t('onboarding.identity_placeholder')}
                       required
                     />
                     <User className="absolute left-3 top-3.5 text-gray-400" size={18} />
@@ -195,25 +197,25 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
                 className="w-full py-3 bg-rose-500 text-white rounded-xl font-bold hover:bg-rose-600 transition flex items-center justify-center gap-2 disabled:opacity-70 mt-4"
               >
                 {isLoading ? <Loader2 className="animate-spin" /> : <Heart size={20} fill="currentColor" />}
-                Create Journal
+                {t('onboarding.create_btn')}
               </button>
             </form>
           ) : (
             <form onSubmit={handleJoin} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Family ID</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('onboarding.family_id_label')}</label>
                 <input
                   type="text"
                   value={familyId}
                   onChange={(e) => setFamilyId(e.target.value)}
                   className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-rose-200 outline-none font-mono text-sm"
-                  placeholder="UUID string"
+                  placeholder={t('onboarding.family_id_placeholder')}
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('onboarding.your_name_label')}</label>
                 <div className="flex gap-2 mb-2 overflow-x-auto no-scrollbar pb-1">
                     {ROLES.map(role => (
                         <button
@@ -235,7 +237,7 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
                   value={joinParentName}
                   onChange={(e) => setJoinParentName(e.target.value)}
                   className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-rose-200 outline-none"
-                  placeholder="e.g. Dad"
+                  placeholder={t('onboarding.your_name_placeholder')}
                   required
                 />
               </div>
@@ -246,7 +248,7 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
                 className="w-full py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-gray-800 transition flex items-center justify-center gap-2 disabled:opacity-70"
               >
                 {isLoading ? <Loader2 className="animate-spin" /> : <ArrowRight size={20} />}
-                Join Family
+                {t('onboarding.join_btn')}
               </button>
             </form>
           )}

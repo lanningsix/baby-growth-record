@@ -1,18 +1,21 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TimelineEvent, RecordType } from '../types';
+import { useTranslation } from '../i18n';
 
 interface Props {
   events: TimelineEvent[];
 }
 
 const GrowthChart: React.FC<Props> = ({ events }) => {
+  const { t, locale } = useTranslation();
+
   // Filter and transform data
   const data = events
     .filter(e => e.type === RecordType.GROWTH && e.growthData)
     .map(e => ({
-      date: new Date(e.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-      fullDate: new Date(e.date).toLocaleDateString(),
+      date: new Date(e.date).toLocaleDateString(locale, { month: 'short', day: 'numeric' }),
+      fullDate: new Date(e.date).toLocaleDateString(locale),
       height: e.growthData?.height,
       weight: e.growthData?.weight,
       rawDate: new Date(e.date).getTime()
@@ -22,7 +25,7 @@ const GrowthChart: React.FC<Props> = ({ events }) => {
   if (data.length === 0) {
     return (
       <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
-        <p className="text-gray-400">No growth records yet. Add one to see the chart!</p>
+        <p className="text-gray-400">{t('growth.no_records')}</p>
       </div>
     );
   }
@@ -31,7 +34,7 @@ const GrowthChart: React.FC<Props> = ({ events }) => {
     <div className="space-y-6">
       <div className="bg-white p-4 rounded-2xl shadow-sm">
         <h3 className="text-gray-700 font-bold mb-4 flex items-center gap-2">
-           Weight Progression (kg)
+           {t('growth.weight_progression')}
         </h3>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -57,7 +60,7 @@ const GrowthChart: React.FC<Props> = ({ events }) => {
 
       <div className="bg-white p-4 rounded-2xl shadow-sm">
         <h3 className="text-gray-700 font-bold mb-4 flex items-center gap-2">
-           Height Progression (cm)
+           {t('growth.height_progression')}
         </h3>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">

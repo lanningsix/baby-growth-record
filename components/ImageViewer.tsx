@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { TimelineEvent } from '../types';
+import { useTranslation } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -10,11 +11,14 @@ interface Props {
 }
 
 const ImageViewer: React.FC<Props> = ({ isOpen, onClose, initialEventId, events }) => {
+  const { t, locale } = useTranslation();
   const [currentIndex, setCurrentIndex] = useState(0);
   
-  // Filter events that actually have images
-  const mediaEvents = events.filter(e => !!e.mediaUrl);
+  // Filter events that actually have images. 
+  // Use useMemo to ensure stable reference for dependency arrays.
+  const mediaEvents = useMemo(() => events.filter(e => !!e.mediaUrl), [events]);
 
+  // Sync initial index when opening
   useEffect(() => {
     if (isOpen && initialEventId) {
       const index = mediaEvents.findIndex(e => e.id === initialEventId);
@@ -22,11 +26,38 @@ const ImageViewer: React.FC<Props> = ({ isOpen, onClose, initialEventId, events 
         setCurrentIndex(index);
       }
     }
-  }, [isOpen, initialEventId]); // Removed events dependency to prevent reset on infinite scroll append
+  }, [isOpen, initialEventId, mediaEvents]); 
 
+  // Handle keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight') {
+        setCurrentIndex(prev => (prev < mediaEvents.length - 1 ? prev + 1 : prev));
+      } else if (e.key === 'ArrowLeft') {
+        setCurrentIndex(prev => (prev > 0 ? prev - 1 : prev));
+      } else if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+    
+    return () => {
+        document.body.style.overflow = 'auto';
+        window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isOpen, onClose, mediaEvents]);
+
+  // Early return MUST happen after all hooks
   if (!isOpen || mediaEvents.length === 0) return null;
 
   const currentEvent = mediaEvents[currentIndex];
+  
+  // Safety check
+  if (!currentEvent) return null;
 
   const handleNext = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -42,37 +73,14 @@ const ImageViewer: React.FC<Props> = ({ isOpen, onClose, initialEventId, events 
     }
   };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'ArrowRight') {
-      if (currentIndex < mediaEvents.length - 1) setCurrentIndex(prev => prev + 1);
-    } else if (e.key === 'ArrowLeft') {
-      if (currentIndex > 0) setCurrentIndex(prev => prev - 1);
-    } else if (e.key === 'Escape') {
-      onClose();
-    }
-  };
-
-  useEffect(() => {
-    if(isOpen) {
-        document.body.style.overflow = 'hidden';
-        window.addEventListener('keydown', handleKeyDown);
-    } else {
-        document.body.style.overflow = 'auto';
-    }
-    return () => {
-        document.body.style.overflow = 'auto';
-        window.removeEventListener('keydown', handleKeyDown);
-    }
-  }, [isOpen, currentIndex]);
-
   return (
     <div className="fixed inset-0 z-[60] bg-black/95 flex flex-col animate-in fade-in duration-200">
       
       {/* Top Bar */}
       <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-start z-10 bg-gradient-to-b from-black/50 to-transparent">
          <div className="text-white">
-             <p className="font-bold text-lg">{new Date(currentEvent.date).toLocaleDateString(undefined, {dateStyle: 'long'})}</p>
-             <p className="text-sm opacity-80">{currentEvent.title || "Memory"}</p>
+             <p className="font-bold text-lg">{new Date(currentEvent.date).toLocaleDateString(locale, {dateStyle: 'long'})}</p>
+             <p className="text-sm opacity-80">{currentEvent.title || t('timeline.photo_memory')}</p>
          </div>
          <button onClick={onClose} className="p-2 bg-white/10 rounded-full hover:bg-white/20 text-white backdrop-blur-sm">
             <X size={24} />

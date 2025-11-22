@@ -227,7 +227,7 @@ app.post('/api/timeline', async (c) => {
 
 app.post('/api/ai/journal', async (c) => {
   try {
-    const { imageBase64, context } = await c.req.json();
+    const { imageBase64, context, lang } = await c.req.json();
     const apiKey = c.env.GEMINI_API_KEY;
     
     if (!apiKey) return c.json({ text: "AI service currently unavailable." });
@@ -246,12 +246,19 @@ app.post('/api/ai/journal', async (c) => {
       });
     }
 
+    // Determine language name for prompt
+    let languageName = "English";
+    if (lang === 'zh') languageName = "Chinese (Simplified)";
+    if (lang === 'ja') languageName = "Japanese";
+    if (lang === 'ko') languageName = "Korean";
+
     const promptText = `
       You are a warm, loving assistant helping a parent write a baby journal.
       Context provided by parent: "${context || ''}".
       ${imageBase64 ? "Please describe the photo and the moment cheerfully." : ""}
       Write a short, sentimental, and cute journal entry (max 3 sentences).
       Tone: Emotional, Happy, Cherishing.
+      Language: Write strictly in ${languageName}.
     `;
 
     parts.push({ text: promptText });
@@ -270,15 +277,21 @@ app.post('/api/ai/journal', async (c) => {
 
 app.post('/api/ai/milestones', async (c) => {
   try {
-    const { ageInMonths } = await c.req.json();
+    const { ageInMonths, lang } = await c.req.json();
     const apiKey = c.env.GEMINI_API_KEY;
     
     if (!apiKey) return c.json({ text: "" });
 
+    // Determine language name for prompt
+    let languageName = "English";
+    if (lang === 'zh') languageName = "Chinese (Simplified)";
+    if (lang === 'ja') languageName = "Japanese";
+    if (lang === 'ko') languageName = "Korean";
+
     const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: `My baby is ${ageInMonths} months old. What are 3 key developmental milestones I should look out for right now? Keep it brief and bulleted. Return as Markdown.`,
+      contents: `My baby is ${ageInMonths} months old. What are 3 key developmental milestones I should look out for right now? Keep it brief and bulleted. Return as Markdown. Write in ${languageName} language.`,
     });
 
     return c.json({ text: response.text });

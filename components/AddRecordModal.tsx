@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { RecordType } from '../types';
 import { generateJournalEntry } from '../services/api';
 import { X, Loader2, Sparkles, Image as ImageIcon, Calendar } from 'lucide-react';
+import { useTranslation } from '../i18n';
 
 interface Props {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }) => {
+  const { t, language } = useTranslation();
   const [activeTab, setActiveTab] = useState<RecordType>(RecordType.PHOTO);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -40,7 +42,7 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
     setIsGenerating(true);
     // Mock a context if empty
     const ctx = description || "A beautiful day with my baby";
-    const text = await generateJournalEntry(previewUrl || undefined, ctx);
+    const text = await generateJournalEntry(previewUrl || undefined, ctx, language);
     setDescription(text);
     setIsGenerating(false);
   };
@@ -63,7 +65,7 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
         height: height ? parseFloat(height) : undefined,
         weight: weight ? parseFloat(weight) : undefined,
       };
-      payload.title = "Growth Update";
+      payload.title = t('add_modal.growth_update');
     }
 
     try {
@@ -89,7 +91,7 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
       <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">New Memory</h2>
+            <h2 className="text-2xl font-bold text-gray-800">{t('add_modal.title')}</h2>
             <button onClick={onClose} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition">
               <X size={20} className="text-gray-600" />
             </button>
@@ -107,14 +109,14 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
                     : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                 }`}
               >
-                {type === RecordType.PHOTO ? 'Photo/Video' : type === RecordType.GROWTH ? 'Measurements' : 'Milestone'}
+                {type === RecordType.PHOTO ? t('add_modal.tab_photo') : type === RecordType.GROWTH ? t('add_modal.tab_growth') : t('add_modal.tab_milestone')}
               </button>
             ))}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-               <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+               <label className="block text-sm font-medium text-gray-700 mb-1">{t('add_modal.date_label')}</label>
                <div className="relative">
                    <input
                     type="date"
@@ -129,7 +131,7 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
             {activeTab === RecordType.GROWTH && (
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Height (cm)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('add_modal.height_label')}</label>
                   <input
                     type="number"
                     step="0.1"
@@ -140,7 +142,7 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('add_modal.weight_label')}</label>
                   <input
                     type="number"
                     step="0.1"
@@ -156,19 +158,19 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
             {(activeTab === RecordType.PHOTO || activeTab === RecordType.MILESTONE) && (
               <>
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('add_modal.title_label')}</label>
                     <input
                         type="text"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-pink-200 outline-none"
-                        placeholder="e.g., First steps at the park"
+                        placeholder={t('add_modal.title_placeholder')}
                     />
                 </div>
 
                 {/* Media Upload */}
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Photo / Video</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">{t('add_modal.photo_label')}</label>
                     <input 
                         type="file" 
                         accept="image/*" 
@@ -183,7 +185,7 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
                             className="w-full h-32 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition text-gray-400 gap-2"
                         >
                             <ImageIcon size={24} />
-                            <span className="text-sm">Tap to upload photo</span>
+                            <span className="text-sm">{t('add_modal.tap_upload')}</span>
                         </div>
                     ) : (
                         <div className="relative w-full h-48 rounded-xl overflow-hidden group">
@@ -201,7 +203,7 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="block text-sm font-medium text-gray-700">Journal Entry</label>
+                    <label className="block text-sm font-medium text-gray-700">{t('add_modal.journal_label')}</label>
                     <button 
                         type="button"
                         onClick={handleMagicCompose}
@@ -209,21 +211,21 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
                         className="text-xs flex items-center gap-1 text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded-lg hover:bg-purple-100 transition"
                     >
                         {isGenerating ? <Loader2 className="animate-spin" size={12}/> : <Sparkles size={12}/>}
-                        AI Magic Write
+                        {t('add_modal.ai_magic')}
                     </button>
                   </div>
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     className="w-full p-3 bg-gray-50 rounded-xl border-none focus:ring-2 focus:ring-pink-200 outline-none min-h-[100px] text-sm"
-                    placeholder="Describe this moment..."
+                    placeholder={t('add_modal.describe_placeholder')}
                   />
                 </div>
               </>
             )}
 
             <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mb-2">
-               <span>Posting as: </span>
+               <span>{t('add_modal.posting_as')} </span>
                <span className="font-bold bg-gray-100 px-2 py-1 rounded text-gray-600">{authorName}</span>
             </div>
 
@@ -233,7 +235,7 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }
               className="w-full py-4 bg-gray-900 text-white rounded-xl font-bold text-lg hover:bg-gray-800 transition flex items-center justify-center gap-2 disabled:opacity-50"
             >
               {isSubmitting && <Loader2 className="animate-spin" />}
-              Save Memory
+              {t('add_modal.save_btn')}
             </button>
           </form>
         </div>
