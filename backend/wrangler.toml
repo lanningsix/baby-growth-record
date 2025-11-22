@@ -1,0 +1,14 @@
+name = "littlesteps-backend"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# 绑定 R2
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "littlesteps-media"
+
+# 绑定 D1
+[[d1_databases]]
+binding = "DB"
+database_name = "littlesteps-db"
+database_id = "fa9bafa2-6c76-4e0f-a133-aa4fdcb44bc7"
