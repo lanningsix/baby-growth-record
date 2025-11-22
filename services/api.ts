@@ -32,6 +32,20 @@ export const updateProfile = async (data: Partial<BabyProfile>): Promise<void> =
   if (!res.ok) throw new Error('Failed to update profile');
 };
 
+export const uploadAvatar = async (file: File): Promise<{ photoUrl: string }> => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${API_BASE_URL}/api/profile/avatar`, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: formData
+  });
+
+  if (!res.ok) throw new Error('Failed to upload avatar');
+  return await res.json();
+};
+
 export const getTimeline = async (
   page = 1, 
   limit = 10, 
@@ -75,7 +89,7 @@ export const getProfile = async (): Promise<BabyProfile | null> => {
         birthDate: data.birth_date,
         gender: data.gender,
         photo_url: data.photo_url,
-        photoUrl: data.photo_url, // Map snake_case to camelCase
+        photoUrl: data.photo_url ? (data.photo_url.startsWith('http') ? data.photo_url : `${API_BASE_URL}${data.photo_url}`) : undefined, 
         currentHeight: data.current_height,
         currentWeight: data.current_weight
     } as BabyProfile;

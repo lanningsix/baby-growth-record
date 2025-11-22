@@ -16,7 +16,10 @@ export const translations = {
       copied: "Copied",
       boy: "Boy",
       girl: "Girl",
-      other: "Other"
+      other: "Other",
+      uploading: "Uploading...",
+      success: "Success",
+      error: "Error"
     },
     nav: {
       home: "Home",
@@ -113,7 +116,10 @@ export const translations = {
       copied: "已复制",
       boy: "男孩",
       girl: "女孩",
-      other: "其他"
+      other: "其他",
+      uploading: "上传中...",
+      success: "成功",
+      error: "错误"
     },
     nav: {
       home: "首页",
@@ -210,7 +216,10 @@ export const translations = {
       copied: "コピーしました",
       boy: "男の子",
       girl: "女の子",
-      other: "その他"
+      other: "その他",
+      uploading: "アップロード中...",
+      success: "成功",
+      error: "エラー"
     },
     nav: {
       home: "ホーム",
@@ -307,7 +316,10 @@ export const translations = {
       copied: "복사됨",
       boy: "남자",
       girl: "여자",
-      other: "기타"
+      other: "기타",
+      uploading: "업로드 중...",
+      success: "성공",
+      error: "오류"
     },
     nav: {
       home: "홈",

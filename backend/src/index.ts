@@ -90,6 +90,30 @@ app.put('/api/profile', async (c) => {
   return c.json({ success: true });
 });
 
+app.post('/api/profile/avatar', async (c) => {
+  const familyId = getFamilyId(c);
+  if (!familyId) return c.json({ error: 'Family ID required' }, 400);
+
+  const body = await c.req.parseBody();
+  const file = body['file'];
+
+  if (file && file instanceof File) {
+      const fileExt = file.name.split('.').pop();
+      const uuid = crypto.randomUUID();
+      const objectKey = `${familyId}/avatar/${uuid}.${fileExt}`;
+
+      await c.env.BUCKET.put(objectKey, file);
+      const photoUrl = `/api/media/${objectKey}`;
+
+      await c.env.DB.prepare('UPDATE profiles SET photo_url = ? WHERE id = ?')
+        .bind(photoUrl, familyId)
+        .run();
+
+      return c.json({ photoUrl });
+  }
+  return c.json({ error: 'No file provided' }, 400);
+});
+
 // --- Timeline Routes ---
 
 app.get('/api/timeline', async (c) => {

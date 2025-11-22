@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { getTimeline, getProfile, addRecord, getMilestoneAdvice, updateProfile } from './services/api';
+import React, { useEffect, useState, useRef } from 'react';
+import { getTimeline, getProfile, addRecord, getMilestoneAdvice, updateProfile, uploadAvatar } from './services/api';
 import { TimelineEvent, BabyProfile } from './types';
 import TimelineItem from './components/TimelineItem';
 import AddRecordModal from './components/AddRecordModal';
@@ -26,7 +26,7 @@ import {
     FilterOutline,
     AddOutline
 } from 'antd-mobile-icons';
-import { Baby, Edit2, Save, Copy, Sparkles } from 'lucide-react';
+import { Baby, Edit2, Save, Copy, Sparkles, Camera } from 'lucide-react';
 
 const PARENT_ROLES = ['Mom', 'Dad', 'Grandma', 'Grandpa'];
 const PAGE_SIZE = 10;
@@ -58,6 +58,9 @@ function App() {
 
   // AI Insight State
   const [aiInsight, setAiInsight] = useState<string | null>(null);
+  
+  // File Input Ref
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const storedId = localStorage.getItem('familyId');
@@ -183,6 +186,32 @@ function App() {
       }
   };
 
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    Toast.show({ icon: 'loading', content: t('common.uploading'), duration: 0 });
+    try {
+        const response = await uploadAvatar(file);
+        // If backend returns relative path, prepend base url. If absolute, use as is.
+        // The api.ts wrapper for getProfile already handles this logic, let's reuse similar logic or rely on what uploadAvatar returns.
+        // To be safe, let's reload profile or manually construct it.
+        // uploadAvatar returns { photoUrl: string } which is usually the relative API path.
+        const fullUrl = response.photoUrl.startsWith('http') 
+            ? response.photoUrl 
+            : `https://littlesteps-backend.dundun.uno${response.photoUrl}`;
+
+        setProfile(prev => prev ? { ...prev, photoUrl: fullUrl } : null);
+        Toast.show({ icon: 'success', content: t('common.success') });
+    } catch (e) {
+        console.error(e);
+        Toast.show({ icon: 'fail', content: t('common.error') });
+    } finally {
+        Toast.clear();
+        if(fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   const calculateAge = (birthDate: string) => {
     const diff = new Date().getTime() - new Date(birthDate).getTime();
     const months = Math.floor(diff / (1000 * 60 * 60 * 24 * 30.44));
@@ -213,7 +242,7 @@ function App() {
              
              <div className="relative px-6 pt-safe-top pb-6">
                 <div className="flex items-center gap-4 mt-4">
-                    <div className="relative group">
+                    <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                         <div className="absolute inset-0 bg-rose-200 rounded-full blur-lg opacity-40 group-hover:opacity-60 transition"></div>
                         <Image 
                           src={profile?.photoUrl || ''} 
@@ -223,10 +252,20 @@ function App() {
                           fit='cover'
                           className="relative z-10 shadow-md"
                           fallback={
-                            <div className="w-16 h-16 bg-white border-4 border-white rounded-full flex items-center justify-center shadow-md text-rose-300">
+                            <div className="w-16 h-16 bg-white border-4 border-white rounded-full flex items-center justify-center shadow-md text-rose-300 relative z-10">
                                 <Baby size={32} strokeWidth={1.5} />
                             </div>
                           }
+                        />
+                        <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/30 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Camera className="text-white drop-shadow-md" size={20} />
+                        </div>
+                        <input 
+                            type="file" 
+                            ref={fileInputRef} 
+                            className="hidden" 
+                            accept="image/*" 
+                            onChange={handleAvatarChange} 
                         />
                     </div>
                     <div className="flex-1 min-w-0">
