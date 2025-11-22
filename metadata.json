@@ -1,0 +1,7 @@
+{
+  "name": "LittleSteps - Baby Growth Tracker",
+  "description": "A secure, private digital journal for tracking your baby's growth, milestones, and precious moments. Features timeline view, growth charts, and AI-assisted journaling.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
