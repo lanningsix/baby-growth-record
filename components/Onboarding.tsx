@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { createFamily, getProfile } from '../services/api';
 import { Baby, Heart, ArrowRight } from 'lucide-react';
@@ -128,17 +129,18 @@ const Onboarding: React.FC<Props> = ({ onComplete }) => {
                         onClick={() => setDatePickerVisible(true)}
                         rules={[{ required: true }]}
                     >
-                        <div className="bg-white rounded-2xl px-4 py-3.5 text-slate-700 flex items-center justify-between cursor-pointer shadow-sm border border-slate-100 font-bold">
-                             <span className={!form.getFieldValue('birthDate') ? 'text-slate-300' : ''}>
-                                {form.getFieldValue('birthDate')?.toLocaleDateString() || t('settings.dob')}
-                             </span>
-                        </div>
                         <DatePicker
                             visible={datePickerVisible}
                             onClose={() => setDatePickerVisible(false)}
                             max={new Date()}
                         >
-                            {value => value?.toLocaleDateString()}
+                            {value => (
+                                <div className="bg-white rounded-2xl px-4 py-3.5 text-slate-700 flex items-center justify-between cursor-pointer shadow-sm border border-slate-100 font-bold">
+                                    <span className={!value ? 'text-slate-300' : ''}>
+                                        {value?.toLocaleDateString() || t('settings.dob')}
+                                    </span>
+                                </div>
+                            )}
                         </DatePicker>
                     </Form.Item>
 

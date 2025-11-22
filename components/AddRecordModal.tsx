@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { RecordType } from '../types';
 import { generateJournalEntry } from '../services/api';
