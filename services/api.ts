@@ -2,8 +2,31 @@ import { TimelineEvent, BabyProfile } from '../types';
 
 const API_BASE_URL = "https://littlesteps-backend.dundun.uno";
 
+// Helper to get headers with Family ID
+const getHeaders = (multipart = false) => {
+  const headers: HeadersInit = {
+    'X-Family-ID': localStorage.getItem('familyId') || ''
+  };
+  if (!multipart) {
+    headers['Content-Type'] = 'application/json';
+  }
+  return headers;
+};
+
+export const createFamily = async (name: string): Promise<{ familyId: string; name: string }> => {
+  const res = await fetch(`${API_BASE_URL}/api/family`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  if (!res.ok) throw new Error('Failed to create family');
+  return await res.json();
+};
+
 export const getTimeline = async (): Promise<TimelineEvent[]> => {
-  const res = await fetch(`${API_BASE_URL}/api/timeline`);
+  const res = await fetch(`${API_BASE_URL}/api/timeline`, {
+    headers: getHeaders()
+  });
   if (!res.ok) throw new Error('Failed to fetch timeline');
   const data = await res.json();
   
@@ -16,7 +39,9 @@ export const getTimeline = async (): Promise<TimelineEvent[]> => {
 
 export const getProfile = async (): Promise<BabyProfile | null> => {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/profile`);
+    const res = await fetch(`${API_BASE_URL}/api/profile`, {
+      headers: getHeaders()
+    });
     if (!res.ok) return null;
     const data = await res.json();
     
@@ -53,6 +78,7 @@ export const addRecord = async (record: any): Promise<TimelineEvent> => {
 
   const res = await fetch(`${API_BASE_URL}/api/timeline`, {
       method: 'POST',
+      headers: getHeaders(true), // multipart/form-data needs no Content-Type header (browser sets it)
       body: formData
   });
 
@@ -73,7 +99,7 @@ export const generateJournalEntry = async (
   try {
     const res = await fetch(`${API_BASE_URL}/api/ai/journal`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getHeaders(),
       body: JSON.stringify({ imageBase64, context })
     });
     
@@ -90,7 +116,7 @@ export const getMilestoneAdvice = async (ageInMonths: number): Promise<string> =
   try {
       const res = await fetch(`${API_BASE_URL}/api/ai/milestones`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify({ ageInMonths })
       });
       if (!res.ok) return "";

@@ -15,13 +15,39 @@ type Bindings = {
 const app = new Hono<{ Bindings: Bindings }>();
 
 // Enable CORS for frontend access
-app.use('/*', cors());
+app.use('/*', cors({
+  origin: '*',
+  allowHeaders: ['Content-Type', 'X-Family-ID'],
+  allowMethods: ['POST', 'GET', 'OPTIONS']
+}));
 
-// --- Profile Routes ---
+// Middleware to extract familyId
+const getFamilyId = (c: any) => {
+  const familyId = c.req.header('X-Family-ID');
+  return familyId;
+};
+
+// --- Family / Profile Routes ---
+
+// Create a new family (generates ID)
+app.post('/api/family', async (c) => {
+  const { name } = await c.req.json();
+  const familyId = crypto.randomUUID();
+  
+  // Create initial profile entry
+  await c.env.DB.prepare(`
+    INSERT INTO profiles (id, name, birth_date, current_height, current_weight)
+    VALUES (?, ?, ?, ?, ?)
+  `).bind(familyId, name, new Date().toISOString(), 50, 3.5).run();
+
+  return c.json({ familyId, name });
+});
 
 app.get('/api/profile', async (c) => {
-  // For this MVP, we assume a single profile with ID 'default'
-  const profile = await c.env.DB.prepare('SELECT * FROM profiles WHERE id = ?').bind('default').first();
+  const familyId = getFamilyId(c);
+  if (!familyId) return c.json({ error: 'Family ID required' }, 400);
+
+  const profile = await c.env.DB.prepare('SELECT * FROM profiles WHERE id = ?').bind(familyId).first();
   
   if (!profile) {
     return c.json({ error: 'Profile not found' }, 404);
@@ -33,9 +59,12 @@ app.get('/api/profile', async (c) => {
 // --- Timeline Routes ---
 
 app.get('/api/timeline', async (c) => {
+  const familyId = getFamilyId(c);
+  if (!familyId) return c.json({ error: 'Family ID required' }, 400);
+
   const { results } = await c.env.DB.prepare(
-    'SELECT * FROM events ORDER BY date DESC'
-  ).all();
+    'SELECT * FROM events WHERE family_id = ? ORDER BY date DESC'
+  ).bind(familyId).all();
   
   // Transform snake_case DB columns to camelCase for frontend
   const events = results.map((r: any) => ({
@@ -55,6 +84,9 @@ app.get('/api/timeline', async (c) => {
 
 app.post('/api/timeline', async (c) => {
   try {
+    const familyId = getFamilyId(c);
+    if (!familyId) return c.json({ error: 'Family ID required' }, 400);
+
     const body = await c.req.parseBody();
     
     const id = crypto.randomUUID();
@@ -92,17 +124,17 @@ app.post('/api/timeline', async (c) => {
             UPDATE profiles 
             SET current_height = COALESCE(?, current_height), 
                 current_weight = COALESCE(?, current_weight) 
-            WHERE id = 'default'
-         `).bind(height, weight).run();
+            WHERE id = ?
+         `).bind(height, weight, familyId).run();
       }
     }
 
-    // Insert Event
+    // Insert Event with family_id
     await c.env.DB.prepare(`
-      INSERT INTO events (id, type, date, title, description, media_url, height, weight, author, tags)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO events (id, family_id, type, date, title, description, media_url, height, weight, author, tags)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(
-      id, type, date, title, description, mediaUrl, height, weight, author, '[]'
+      id, familyId, type, date, title, description, mediaUrl, height, weight, author, '[]'
     ).run();
 
     return c.json({ success: true, id, mediaUrl });

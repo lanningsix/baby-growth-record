@@ -4,7 +4,8 @@ import { TimelineEvent, BabyProfile } from './types';
 import TimelineItem from './components/TimelineItem';
 import AddRecordModal from './components/AddRecordModal';
 import GrowthChart from './components/GrowthChart';
-import { Plus, Home, LineChart, Settings, Users, Baby } from 'lucide-react';
+import Onboarding from './components/Onboarding';
+import { Plus, Home, LineChart, Settings, Users, Baby, LogOut, Copy, Check } from 'lucide-react';
 
 function App() {
   // Navigation State
@@ -15,12 +16,20 @@ function App() {
   const [profile, setProfile] = useState<BabyProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [familyId, setFamilyId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   
   // AI Insight State
   const [aiInsight, setAiInsight] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchData();
+    const storedId = localStorage.getItem('familyId');
+    if (storedId) {
+      setFamilyId(storedId);
+      fetchData();
+    } else {
+      setLoading(false); // Stop global loading to show Onboarding
+    }
   }, []);
 
   // Fetch initial data
@@ -43,8 +52,33 @@ function App() {
 
     } catch (error) {
       console.error("Failed to load data", error);
+      // If fetch fails dramatically (e.g. 404 profile), maybe clear ID?
+      // For now, just stay loaded but empty
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleOnboardingComplete = () => {
+    const storedId = localStorage.getItem('familyId');
+    if (storedId) {
+      setFamilyId(storedId);
+      fetchData();
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('familyId');
+    setFamilyId(null);
+    setProfile(null);
+    setEvents([]);
+  };
+
+  const handleCopyId = () => {
+    if (familyId) {
+      navigator.clipboard.writeText(familyId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -66,6 +100,10 @@ function App() {
     const remainingMonths = months % 12;
     return years > 0 ? `${years}y ${remainingMonths}m` : `${months} months`;
   };
+
+  if (!familyId) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
 
   if (loading) {
     return (
@@ -97,6 +135,11 @@ function App() {
                 <Settings size={24} />
             </button>
         </nav>
+        <div className="mt-auto">
+           <button onClick={handleLogout} className="p-3 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition">
+              <LogOut size={24} />
+           </button>
+        </div>
       </div>
 
       {/* Mobile Header / Profile Summary */}
@@ -142,9 +185,15 @@ function App() {
         {currentView === 'timeline' && (
           <div className="space-y-2 pb-20">
              <h2 className="text-lg font-bold text-gray-700 mb-4 ml-2">Timeline</h2>
-            {events.map(event => (
-              <TimelineItem key={event.id} event={event} />
-            ))}
+            {events.length === 0 ? (
+               <div className="text-center py-10 text-gray-400">
+                 <p>No memories yet. Tap + to add one!</p>
+               </div>
+            ) : (
+               events.map(event => (
+                 <TimelineItem key={event.id} event={event} />
+               ))
+            )}
           </div>
         )}
 
@@ -160,6 +209,18 @@ function App() {
                 <h2 className="text-xl font-bold mb-6">Family Settings</h2>
                 
                 <div className="space-y-6">
+                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                        <p className="text-xs font-bold text-gray-400 uppercase mb-2">Your Family ID</p>
+                        <div className="flex items-center justify-between">
+                            <code className="text-sm font-mono bg-white px-2 py-1 rounded border text-gray-600 truncate max-w-[200px]">{familyId}</code>
+                            <button onClick={handleCopyId} className="text-rose-500 hover:text-rose-600 flex items-center gap-1 text-sm font-bold">
+                                {copied ? <Check size={16} /> : <Copy size={16} />}
+                                {copied ? "Copied" : "Copy"}
+                            </button>
+                        </div>
+                        <p className="text-xs text-gray-400 mt-2">Share this ID with family members to let them join.</p>
+                    </div>
+
                     <div className="flex items-center justify-between pb-4 border-b border-gray-100">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-green-100 text-green-600 rounded-full"><Users size={20}/></div>
@@ -168,30 +229,14 @@ function App() {
                                 <p className="text-sm text-gray-500">Invite grandparents to view updates</p>
                             </div>
                         </div>
-                        <button className="px-4 py-2 bg-gray-900 text-white text-sm font-bold rounded-lg">Invite</button>
                     </div>
 
-                    <div>
-                        <h3 className="text-sm font-bold text-gray-400 uppercase mb-3">Access List</h3>
-                        <div className="flex items-center justify-between mb-3">
-                             <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs">You</div>
-                                <span className="text-gray-700 font-medium">Mom (Admin)</span>
-                             </div>
-                        </div>
-                        <div className="flex items-center justify-between mb-3">
-                             <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs">D</div>
-                                <span className="text-gray-700 font-medium">Dad (Admin)</span>
-                             </div>
-                        </div>
-                         <div className="flex items-center justify-between opacity-60">
-                             <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center text-xs">G</div>
-                                <span className="text-gray-700 font-medium">Grandma (Viewer)</span>
-                             </div>
-                        </div>
-                    </div>
+                    <button 
+                      onClick={handleLogout}
+                      className="w-full py-3 border border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-50 transition"
+                    >
+                      Log Out / Switch Family
+                    </button>
                 </div>
             </div>
         )}
