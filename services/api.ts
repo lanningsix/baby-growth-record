@@ -1,6 +1,6 @@
 import { TimelineEvent, BabyProfile } from '../types';
 
-const API_BASE_URL = "https://littlesteps-backend.dundun.uno";
+export const API_BASE_URL = "https://littlesteps-backend.dundun.uno";
 
 // Helper to get headers with Family ID
 const getHeaders = (multipart = false) => {

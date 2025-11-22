@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { getTimeline, getProfile, addRecord, getMilestoneAdvice, updateProfile, uploadAvatar } from './services/api';
+import { getTimeline, getProfile, addRecord, getMilestoneAdvice, updateProfile, uploadAvatar, API_BASE_URL } from './services/api';
 import { TimelineEvent, BabyProfile } from './types';
 import TimelineItem from './components/TimelineItem';
 import AddRecordModal from './components/AddRecordModal';
@@ -193,13 +193,10 @@ function App() {
     Toast.show({ icon: 'loading', content: t('common.uploading'), duration: 0 });
     try {
         const response = await uploadAvatar(file);
-        // If backend returns relative path, prepend base url. If absolute, use as is.
-        // The api.ts wrapper for getProfile already handles this logic, let's reuse similar logic or rely on what uploadAvatar returns.
-        // To be safe, let's reload profile or manually construct it.
-        // uploadAvatar returns { photoUrl: string } which is usually the relative API path.
+        
         const fullUrl = response.photoUrl.startsWith('http') 
             ? response.photoUrl 
-            : `https://littlesteps-backend.dundun.uno${response.photoUrl}`;
+            : `${API_BASE_URL}${response.photoUrl}`;
 
         setProfile(prev => prev ? { ...prev, photoUrl: fullUrl } : null);
         Toast.show({ icon: 'success', content: t('common.success') });
@@ -245,6 +242,7 @@ function App() {
                     <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
                         <div className="absolute inset-0 bg-rose-200 rounded-full blur-lg opacity-40 group-hover:opacity-60 transition"></div>
                         <Image 
+                          key={profile?.photoUrl}
                           src={profile?.photoUrl || ''} 
                           width={64} 
                           height={64} 
