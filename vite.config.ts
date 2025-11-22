@@ -14,6 +14,9 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve('.'),
         }
+      },
+      optimizeDeps: {
+        include: ['antd-mobile', 'antd-mobile-icons', 'lucide-react', 'recharts']
       }
     };
 });

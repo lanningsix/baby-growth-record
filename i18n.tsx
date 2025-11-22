@@ -50,7 +50,9 @@ export const translations = {
       added_by: "Added by",
       tap_to_view: "Tap to view",
       photo_memory: "Photo Memory",
-      ai_insight_title: "AI Development Tracker"
+      ai_insight_title: "AI Development Tracker",
+      today: "Today",
+      yesterday: "Yesterday"
     },
     growth: {
       title: "Growth Tracker",
@@ -145,7 +147,9 @@ export const translations = {
       added_by: "记录人：",
       tap_to_view: "点击查看",
       photo_memory: "照片回忆",
-      ai_insight_title: "AI 成长追踪"
+      ai_insight_title: "AI 成长追踪",
+      today: "今天",
+      yesterday: "昨天"
     },
     growth: {
       title: "成长追踪",
@@ -240,7 +244,9 @@ export const translations = {
       added_by: "投稿者：",
       tap_to_view: "タップして表示",
       photo_memory: "写真の思い出",
-      ai_insight_title: "AI 発達トラッカー"
+      ai_insight_title: "AI 発達トラッカー",
+      today: "今日",
+      yesterday: "昨日"
     },
     growth: {
       title: "成長トラッカー",
@@ -335,7 +341,9 @@ export const translations = {
       added_by: "작성자:",
       tap_to_view: "탭하여 보기",
       photo_memory: "사진 추억",
-      ai_insight_title: "AI 발달 트래커"
+      ai_insight_title: "AI 발달 트래커",
+      today: "오늘",
+      yesterday: "어제"
     },
     growth: {
       title: "성장 트래커",

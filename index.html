@@ -14,6 +14,9 @@
         font-family: 'Nunito', sans-serif;
         background-color: #fff1f2; /* Soft Rose background */
         -webkit-tap-highlight-color: transparent;
+        --adm-color-primary: #f43f5e; /* Tailwind rose-500 */
+        --adm-color-primary-light: #ffe4e6;
+        --adm-font-family: 'Nunito', sans-serif;
       }
       /* Hide scrollbar for clean UI */
       .no-scrollbar::-webkit-scrollbar {
@@ -24,24 +27,26 @@
         scrollbar-width: none;
       }
     </style>
-  <script type="importmap">
+<script type="importmap">
 {
   "imports": {
-    "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
-    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
-    "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
-    "hono/": "https://aistudiocdn.com/hono@^4.10.6/",
+    "antd-mobile/": "https://aistudiocdn.com/antd-mobile@^5.41.1/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "antd-mobile": "https://aistudiocdn.com/antd-mobile@^5.41.1",
+    "recharts": "https://aistudiocdn.com/recharts@^3.4.1",
+    "antd-mobile-icons": "https://aistudiocdn.com/antd-mobile-icons@^0.3.0",
     "hono": "https://aistudiocdn.com/hono@^4.10.6",
+    "hono/": "https://aistudiocdn.com/hono@^4.10.6/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
     "vite": "https://aistudiocdn.com/vite@^7.2.4",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1",
-    "path": "https://aistudiocdn.com/path@^0.12.7"
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.1.1"
   }
 }
 </script>
-
 </head>
   <body>
     <div id="root"></div>

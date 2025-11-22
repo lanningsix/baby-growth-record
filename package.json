@@ -14,7 +14,9 @@
     "recharts": "^3.4.1",
     "react-dom": "^19.2.0",
     "@google/genai": "^1.30.0",
-    "hono": "^4.10.6"
+    "hono": "^4.10.6",
+    "antd-mobile": "^5.35.0",
+    "antd-mobile-icons": "^0.3.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
