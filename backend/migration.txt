@@ -1,0 +1,41 @@
+-- Run these commands to update your D1 database schema
+-- Usage: wrangler d1 execute <YOUR_DB_NAME> --file=backend/migration.txt --remote
+
+-- 1. Add the missing family_id column to the events table
+ALTER TABLE events ADD COLUMN family_id TEXT;
+
+-- 2. Create an index on family_id for faster queries
+CREATE INDEX IF NOT EXISTS idx_events_family_id ON events(family_id);
+
+-- 3. Add gender column to profiles if it doesn't exist
+ALTER TABLE profiles ADD COLUMN gender TEXT;
+
+-- 4. (Reference) Full Schema Definition
+/*
+DROP TABLE IF EXISTS events;
+DROP TABLE IF EXISTS profiles;
+
+CREATE TABLE profiles (
+  id TEXT PRIMARY KEY, -- This acts as the family_id
+  name TEXT, -- Baby Name
+  birth_date TEXT,
+  gender TEXT, -- 'boy', 'girl', 'other'
+  photo_url TEXT,
+  current_height REAL,
+  current_weight REAL
+);
+
+CREATE TABLE events (
+  id TEXT PRIMARY KEY,
+  family_id TEXT,
+  type TEXT,
+  date TEXT,
+  title TEXT,
+  description TEXT,
+  media_url TEXT,
+  height REAL,
+  weight REAL,
+  author TEXT,
+  tags TEXT
+);
+*/

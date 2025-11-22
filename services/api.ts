@@ -13,14 +13,23 @@ const getHeaders = (multipart = false) => {
   return headers;
 };
 
-export const createFamily = async (name: string): Promise<{ familyId: string; name: string }> => {
+export const createFamily = async (data: { babyName: string; birthDate: string; gender: string }): Promise<{ familyId: string; name: string }> => {
   const res = await fetch(`${API_BASE_URL}/api/family`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name })
+    body: JSON.stringify(data)
   });
   if (!res.ok) throw new Error('Failed to create family');
   return await res.json();
+};
+
+export const updateProfile = async (data: Partial<BabyProfile>): Promise<void> => {
+  const res = await fetch(`${API_BASE_URL}/api/profile`, {
+    method: 'PUT',
+    headers: getHeaders(),
+    body: JSON.stringify(data)
+  });
+  if (!res.ok) throw new Error('Failed to update profile');
 };
 
 export const getTimeline = async (): Promise<TimelineEvent[]> => {
@@ -48,6 +57,7 @@ export const getProfile = async (): Promise<BabyProfile | null> => {
     return {
         name: data.name,
         birthDate: data.birth_date,
+        gender: data.gender,
         photoUrl: data.photo_url,
         currentHeight: data.current_height,
         currentWeight: data.current_weight

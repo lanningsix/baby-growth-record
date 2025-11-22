@@ -7,9 +7,10 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSave: (data: any) => void;
+  authorName: string;
 }
 
-const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
+const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave, authorName }) => {
   const [activeTab, setActiveTab] = useState<RecordType>(RecordType.PHOTO);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -54,7 +55,7 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
       title,
       description,
       file: file, // Pass the raw file to the service
-      author: 'Mom' // Hardcoded for demo
+      author: authorName || 'Family Member'
     };
 
     if (activeTab === RecordType.GROWTH) {
@@ -220,6 +221,11 @@ const AddRecordModal: React.FC<Props> = ({ isOpen, onClose, onSave }) => {
                 </div>
               </>
             )}
+
+            <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mb-2">
+               <span>Posting as: </span>
+               <span className="font-bold bg-gray-100 px-2 py-1 rounded text-gray-600">{authorName}</span>
+            </div>
 
             <button
               type="submit"

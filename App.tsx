@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { getTimeline, getProfile, addRecord, getMilestoneAdvice } from './services/api';
+import { getTimeline, getProfile, addRecord, getMilestoneAdvice, updateProfile } from './services/api';
 import { TimelineEvent, BabyProfile } from './types';
 import TimelineItem from './components/TimelineItem';
 import AddRecordModal from './components/AddRecordModal';
 import GrowthChart from './components/GrowthChart';
 import Onboarding from './components/Onboarding';
-import { Plus, Home, LineChart, Settings, Users, Baby, LogOut, Copy, Check } from 'lucide-react';
+import { Plus, Home, LineChart, Settings, Users, Baby, LogOut, Copy, Check, Edit2, Save, User } from 'lucide-react';
+
+const PARENT_ROLES = ['Mom', 'Dad', 'Grandma', 'Grandpa'];
 
 function App() {
   // Navigation State
@@ -18,12 +20,25 @@ function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [familyId, setFamilyId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [myIdentity, setMyIdentity] = useState<string>('Mom');
   
+  // Settings Editing State
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editDob, setEditDob] = useState('');
+  const [editMyName, setEditMyName] = useState('');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
   // AI Insight State
   const [aiInsight, setAiInsight] = useState<string | null>(null);
 
   useEffect(() => {
     const storedId = localStorage.getItem('familyId');
+    const storedName = localStorage.getItem('parentName');
+    
+    if (storedName) setMyIdentity(storedName);
+    if (editMyName === '') setEditMyName(storedName || '');
+
     if (storedId) {
       setFamilyId(storedId);
       fetchData();
@@ -43,6 +58,12 @@ function App() {
       setEvents(eventsData);
       setProfile(profileData);
       
+      // Pre-fill edit fields
+      if (profileData) {
+          setEditName(profileData.name);
+          setEditDob(profileData.birthDate);
+      }
+      
       // Get simple AI advice based on age
       if(profileData) {
         // Calculate age in months roughly
@@ -61,6 +82,8 @@ function App() {
 
   const handleOnboardingComplete = () => {
     const storedId = localStorage.getItem('familyId');
+    const storedName = localStorage.getItem('parentName');
+    if (storedName) setMyIdentity(storedName);
     if (storedId) {
       setFamilyId(storedId);
       fetchData();
@@ -69,6 +92,7 @@ function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('familyId');
+    localStorage.removeItem('parentName');
     setFamilyId(null);
     setProfile(null);
     setEvents([]);
@@ -91,6 +115,33 @@ function App() {
       const p = await getProfile();
       setProfile(p);
     }
+  };
+
+  const handleSaveProfile = async () => {
+      setIsSavingProfile(true);
+      try {
+          await updateProfile({
+              name: editName,
+              birthDate: editDob
+          });
+          // Update local state
+          if(profile) {
+              setProfile({...profile, name: editName, birthDate: editDob});
+          }
+          setIsEditingProfile(false);
+      } catch (e) {
+          alert("Failed to save profile.");
+      } finally {
+          setIsSavingProfile(false);
+      }
+  };
+
+  const handleSaveMyIdentity = () => {
+      if(editMyName.trim()) {
+          localStorage.setItem('parentName', editMyName);
+          setMyIdentity(editMyName);
+          alert("Identity updated!");
+      }
   };
 
   const calculateAge = (birthDate: string) => {
@@ -205,38 +256,114 @@ function App() {
         )}
 
         {currentView === 'settings' && (
-            <div className="bg-white rounded-2xl shadow-sm p-6">
-                <h2 className="text-xl font-bold mb-6">Family Settings</h2>
+            <div className="pb-24 space-y-6">
                 
-                <div className="space-y-6">
-                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
-                        <p className="text-xs font-bold text-gray-400 uppercase mb-2">Your Family ID</p>
-                        <div className="flex items-center justify-between">
-                            <code className="text-sm font-mono bg-white px-2 py-1 rounded border text-gray-600 truncate max-w-[200px]">{familyId}</code>
-                            <button onClick={handleCopyId} className="text-rose-500 hover:text-rose-600 flex items-center gap-1 text-sm font-bold">
-                                {copied ? <Check size={16} /> : <Copy size={16} />}
-                                {copied ? "Copied" : "Copy"}
+                {/* Baby Profile Settings */}
+                <div className="bg-white rounded-2xl shadow-sm p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-gray-800">Baby Profile</h2>
+                        {!isEditingProfile ? (
+                            <button onClick={() => setIsEditingProfile(true)} className="p-2 text-gray-400 hover:bg-gray-50 rounded-full transition">
+                                <Edit2 size={18} />
                             </button>
-                        </div>
-                        <p className="text-xs text-gray-400 mt-2">Share this ID with family members to let them join.</p>
-                    </div>
-
-                    <div className="flex items-center justify-between pb-4 border-b border-gray-100">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-green-100 text-green-600 rounded-full"><Users size={20}/></div>
-                            <div>
-                                <p className="font-bold text-gray-800">Family Sharing</p>
-                                <p className="text-sm text-gray-500">Invite grandparents to view updates</p>
+                        ) : (
+                            <div className="flex gap-2">
+                                <button onClick={() => setIsEditingProfile(false)} className="px-3 py-1 text-sm text-gray-500">Cancel</button>
+                                <button onClick={handleSaveProfile} disabled={isSavingProfile} className="px-3 py-1 bg-rose-500 text-white text-sm rounded-lg shadow-sm">
+                                    {isSavingProfile ? "Saving..." : "Save"}
+                                </button>
                             </div>
+                        )}
+                    </div>
+                    
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Name</label>
+                            {isEditingProfile ? (
+                                <input type="text" value={editName} onChange={e => setEditName(e.target.value)} className="w-full p-2 bg-gray-50 rounded-lg border border-gray-200" />
+                            ) : (
+                                <p className="text-lg font-medium text-gray-700">{profile?.name}</p>
+                            )}
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Date of Birth</label>
+                             {isEditingProfile ? (
+                                <input type="date" value={editDob} onChange={e => setEditDob(e.target.value)} className="w-full p-2 bg-gray-50 rounded-lg border border-gray-200" />
+                            ) : (
+                                <p className="text-gray-700 font-mono">{profile?.birthDate.split('T')[0]}</p>
+                            )}
                         </div>
                     </div>
+                </div>
 
-                    <button 
-                      onClick={handleLogout}
-                      className="w-full py-3 border border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-50 transition"
-                    >
-                      Log Out / Switch Family
-                    </button>
+                 {/* Parent / User Settings */}
+                 <div className="bg-white rounded-2xl shadow-sm p-6">
+                    <h2 className="text-xl font-bold text-gray-800 mb-4">My Identity</h2>
+                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 mb-4">
+                        <div className="flex gap-4 items-start">
+                             <div className="p-3 bg-blue-100 text-blue-600 rounded-full mt-1"><User size={24}/></div>
+                             <div className="flex-1">
+                                 <label className="block text-xs font-bold text-blue-400 uppercase mb-2">Display Name</label>
+                                 
+                                 {/* Quick Select Chips */}
+                                 <div className="flex gap-2 mb-3 flex-wrap">
+                                    {PARENT_ROLES.map(role => (
+                                        <button
+                                            key={role}
+                                            onClick={() => setEditMyName(role)}
+                                            className={`px-3 py-1 rounded-full text-xs font-bold border transition-colors ${
+                                                editMyName === role 
+                                                ? 'bg-blue-500 text-white border-blue-500' 
+                                                : 'bg-white text-blue-500 border-blue-200 hover:bg-blue-50'
+                                            }`}
+                                        >
+                                            {role}
+                                        </button>
+                                    ))}
+                                 </div>
+
+                                 <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        value={editMyName} 
+                                        onChange={e => setEditMyName(e.target.value)}
+                                        placeholder="Custom name..."
+                                        className="flex-1 bg-white border border-blue-100 rounded-lg p-2 text-gray-800 font-semibold focus:ring-2 focus:ring-blue-200 outline-none"
+                                    />
+                                    <button onClick={handleSaveMyIdentity} className="bg-blue-500 text-white p-2 rounded-lg shadow-sm hover:bg-blue-600">
+                                        <Save size={18} />
+                                    </button>
+                                 </div>
+                                 <p className="text-xs text-blue-400 mt-2">This name will appear on memory cards you create.</p>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Family Settings */}
+                <div className="bg-white rounded-2xl shadow-sm p-6">
+                    <h2 className="text-xl font-bold mb-6">Family Connection</h2>
+                    
+                    <div className="space-y-6">
+                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                            <p className="text-xs font-bold text-gray-400 uppercase mb-2">Your Family ID</p>
+                            <div className="flex items-center justify-between">
+                                <code className="text-sm font-mono bg-white px-2 py-1 rounded border text-gray-600 truncate max-w-[200px]">{familyId}</code>
+                                <button onClick={handleCopyId} className="text-rose-500 hover:text-rose-600 flex items-center gap-1 text-sm font-bold">
+                                    {copied ? <Check size={16} /> : <Copy size={16} />}
+                                    {copied ? "Copied" : "Copy"}
+                                </button>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-2">Share this ID with family members to let them join.</p>
+                        </div>
+
+                        <button 
+                          onClick={handleLogout}
+                          className="w-full py-3 border border-red-100 text-red-500 font-bold rounded-xl hover:bg-red-50 transition"
+                        >
+                          Log Out / Switch Family
+                        </button>
+                    </div>
                 </div>
             </div>
         )}
@@ -262,7 +389,7 @@ function App() {
          </button>
          <button onClick={() => setCurrentView('settings')} className={`flex flex-col items-center gap-1 ${currentView === 'settings' ? 'text-rose-500' : 'text-gray-400'}`}>
             <Settings size={24} />
-            <span className="text-[10px] font-bold">Family</span>
+            <span className="text-[10px] font-bold">Settings</span>
          </button>
       </div>
 
@@ -270,6 +397,7 @@ function App() {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
         onSave={handleSaveRecord}
+        authorName={myIdentity}
       />
 
     </div>

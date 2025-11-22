@@ -25,6 +25,7 @@ export interface TimelineEvent {
 export interface BabyProfile {
   name: string;
   birthDate: string;
+  gender?: 'boy' | 'girl' | 'other';
   photoUrl?: string;
   currentHeight: number;
   currentWeight: number;

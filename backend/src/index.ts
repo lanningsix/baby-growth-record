@@ -18,7 +18,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use('/*', cors({
   origin: '*',
   allowHeaders: ['Content-Type', 'X-Family-ID'],
-  allowMethods: ['POST', 'GET', 'OPTIONS']
+  allowMethods: ['POST', 'GET', 'PUT', 'OPTIONS']
 }));
 
 // Middleware to extract familyId
@@ -31,16 +31,23 @@ const getFamilyId = (c: any) => {
 
 // Create a new family (generates ID)
 app.post('/api/family', async (c) => {
-  const { name } = await c.req.json();
+  const { babyName, birthDate, gender } = await c.req.json();
   const familyId = crypto.randomUUID();
   
   // Create initial profile entry
   await c.env.DB.prepare(`
-    INSERT INTO profiles (id, name, birth_date, current_height, current_weight)
-    VALUES (?, ?, ?, ?, ?)
-  `).bind(familyId, name, new Date().toISOString(), 50, 3.5).run();
+    INSERT INTO profiles (id, name, birth_date, gender, current_height, current_weight)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `).bind(
+    familyId, 
+    babyName || "Baby", 
+    birthDate || new Date().toISOString(), 
+    gender || 'other',
+    50, 
+    3.5
+  ).run();
 
-  return c.json({ familyId, name });
+  return c.json({ familyId, name: babyName });
 });
 
 app.get('/api/profile', async (c) => {
@@ -54,6 +61,33 @@ app.get('/api/profile', async (c) => {
   }
   
   return c.json(profile);
+});
+
+app.put('/api/profile', async (c) => {
+  const familyId = getFamilyId(c);
+  if (!familyId) return c.json({ error: 'Family ID required' }, 400);
+
+  const { name, birthDate, gender, currentHeight, currentWeight } = await c.req.json();
+
+  // Build dynamic update query
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (name) { updates.push("name = ?"); values.push(name); }
+  if (birthDate) { updates.push("birth_date = ?"); values.push(birthDate); }
+  if (gender) { updates.push("gender = ?"); values.push(gender); }
+  if (currentHeight) { updates.push("current_height = ?"); values.push(currentHeight); }
+  if (currentWeight) { updates.push("current_weight = ?"); values.push(currentWeight); }
+
+  if (updates.length === 0) return c.json({ message: "No changes" });
+
+  values.push(familyId); // For WHERE clause
+
+  const query = `UPDATE profiles SET ${updates.join(', ')} WHERE id = ?`;
+  
+  await c.env.DB.prepare(query).bind(...values).run();
+
+  return c.json({ success: true });
 });
 
 // --- Timeline Routes ---
@@ -104,13 +138,27 @@ app.post('/api/timeline', async (c) => {
     const file = body['file'];
     if (file && file instanceof File) {
       const fileExt = file.name.split('.').pop();
-      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const uuid = crypto.randomUUID();
+
+      // Organize by date folder (YYYY-MM-DD)
+      // Expecting ISO string for date
+      let dateFolder = 'misc';
+      if (date && typeof date === 'string') {
+        try {
+            dateFolder = date.split('T')[0];
+        } catch(e) {
+            // fallback to misc if parse fails
+        }
+      }
+      
+      // Construct structured Key: familyId/date/uuid.ext
+      const objectKey = `${familyId}/${dateFolder}/${uuid}.${fileExt}`;
       
       // Put object into R2
-      await c.env.BUCKET.put(fileName, file);
+      await c.env.BUCKET.put(objectKey, file);
       
       // Construct relative URL to be served via proxy
-      mediaUrl = `/api/media/${fileName}`; 
+      mediaUrl = `/api/media/${objectKey}`; 
     }
 
     // Handle Growth Data
@@ -209,8 +257,16 @@ app.post('/api/ai/milestones', async (c) => {
 });
 
 // --- Media Proxy Route (If R2 is not public) ---
-app.get('/api/media/:key', async (c) => {
-    const key = c.req.param('key');
+// Use wildcard to support nested paths (familyId/date/filename)
+app.get('/api/media/*', async (c) => {
+    // Extract the full path from the URL and remove the prefix
+    const path = c.req.path; 
+    const key = path.replace(/^\/api\/media\//, '');
+
+    if (!key) {
+        return c.text('Object Not Found', 404);
+    }
+
     const object = await c.env.BUCKET.get(key);
 
     if (!object) {
