@@ -26,7 +26,7 @@ import {
     FilterOutline,
     AddOutline
 } from 'antd-mobile-icons';
-import { Baby, Edit2, Save, Copy, Sparkles, Camera } from 'lucide-react';
+import { Baby, Edit2, Save, Copy, Sparkles, Camera, User, X } from 'lucide-react';
 
 const PARENT_ROLES = ['Mom', 'Dad', 'Grandma', 'Grandpa'];
 const PAGE_SIZE = 10;
@@ -366,43 +366,110 @@ function App() {
                              />
                         </div>
 
-                        <div className="bg-white rounded-[2rem] overflow-hidden shadow-sm p-2">
-                             <List header={<span className="text-lg font-extrabold text-gray-800 px-2">{t('settings.baby_profile')}</span>}>
-                                <List.Item 
-                                    extra={!isEditingProfile && <div className="bg-rose-50 text-rose-500 p-2 rounded-full"><Edit2 size={16} onClick={() => setIsEditingProfile(true)} /></div>}
-                                    title={<span className="font-bold text-gray-600 text-sm">{t('settings.name')}</span>}
-                                    className="rounded-xl hover:bg-gray-50 transition"
-                                >
-                                    {isEditingProfile ? (
-                                        <div className="flex gap-3">
-                                            <Input className="bg-gray-50 px-3 py-1 rounded-xl" value={editName} onChange={setEditName} />
-                                            <Button size='mini' color='primary' onClick={handleSaveProfile} shape='rounded' className="!bg-rose-500"><Save size={16}/></Button>
+                         {/* Baby Profile Section */}
+                         <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 relative overflow-hidden">
+                            {/* Decorative background element */}
+                            <div className="absolute -right-6 -top-6 w-24 h-24 bg-rose-50 rounded-full opacity-50 blur-2xl"></div>
+                            
+                            <div className="flex items-center gap-3 mb-6 relative z-10">
+                                <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 shadow-inner">
+                                    <Baby size={20} strokeWidth={2.5} />
+                                </div>
+                                <h3 className="text-lg font-extrabold text-slate-800">{t('settings.baby_profile')}</h3>
+                            </div>
+                            
+                            <div className="bg-slate-50/80 rounded-2xl p-1.5 border border-slate-100 relative z-10">
+                                {isEditingProfile ? (
+                                    <div className="flex items-center gap-2 p-1 animate-fade-in">
+                                        <div className="flex-1 bg-white rounded-xl px-3 py-2 shadow-sm border border-slate-100 flex flex-col">
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">{t('settings.name')}</span>
+                                            <input 
+                                                className="w-full text-lg font-black text-slate-800 outline-none bg-transparent placeholder-slate-300"
+                                                value={editName}
+                                                onChange={(e) => setEditName(e.target.value)}
+                                                autoFocus
+                                            />
                                         </div>
-                                    ) : <span className="text-lg font-bold text-gray-800">{profile?.name}</span>}
-                                </List.Item>
-                            </List>
+                                        <button 
+                                            onClick={handleSaveProfile} 
+                                            className="w-12 h-12 flex items-center justify-center bg-rose-500 text-white rounded-xl shadow-lg shadow-rose-200 active:scale-90 transition"
+                                        >
+                                            <Save size={20} strokeWidth={2.5} />
+                                        </button>
+                                         <button 
+                                            onClick={() => setIsEditingProfile(false)} 
+                                            className="w-12 h-12 flex items-center justify-center bg-slate-200 text-slate-500 rounded-xl hover:bg-slate-300 active:scale-90 transition"
+                                        >
+                                            <X size={20} strokeWidth={2.5} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                     <div 
+                                        onClick={() => setIsEditingProfile(true)}
+                                        className="flex items-center justify-between p-4 rounded-xl cursor-pointer group hover:bg-white hover:shadow-sm transition-all duration-300"
+                                    >
+                                        <div>
+                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('settings.name')}</div>
+                                            <div className="text-xl font-black text-slate-800">{profile?.name}</div>
+                                        </div>
+                                        <div className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-300 group-hover:text-rose-500 group-hover:border-rose-100 transition-colors shadow-sm">
+                                            <Edit2 size={18} strokeWidth={2.5} />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
-                        <div className="bg-white rounded-[2rem] overflow-hidden shadow-sm p-2">
-                            <List header={<span className="text-lg font-extrabold text-gray-800 px-2">{t('settings.my_identity')}</span>}>
-                                 <List.Item title={<span className="font-bold text-gray-600 text-sm">{t('settings.display_name')}</span>} className="rounded-xl">
-                                     <div className="flex gap-2 items-center mb-4">
-                                         <Input className="bg-gray-50 px-3 py-2 rounded-xl font-bold text-gray-800" value={editMyName} onChange={setEditMyName} />
-                                         <Button size='small' color='primary' onClick={handleSaveMyIdentity} shape='rounded' className="!bg-rose-500 !border-none shadow-lg shadow-rose-200"><Save size={18}/></Button>
-                                     </div>
-                                     <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                                         {PARENT_ROLES.map(role => (
-                                             <button 
-                                                key={role} 
-                                                onClick={() => setEditMyName(role)} 
-                                                className={`px-4 py-2 text-xs rounded-2xl font-bold border transition ${editMyName === role ? 'bg-rose-500 text-white border-rose-500 shadow-lg shadow-rose-200' : 'bg-white text-gray-500 border-gray-100'}`}
-                                             >
-                                                 {role}
-                                             </button>
-                                         ))}
-                                     </div>
-                                 </List.Item>
-                            </List>
+                        {/* My Identity */}
+                        <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 mt-6 relative overflow-hidden">
+                            <div className="absolute -left-6 -bottom-6 w-32 h-32 bg-indigo-50 rounded-full opacity-50 blur-3xl"></div>
+
+                            <div className="flex items-center gap-3 mb-6 relative z-10">
+                                <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 shadow-inner">
+                                    <User size={20} strokeWidth={2.5} />
+                                </div>
+                                <h3 className="text-lg font-extrabold text-slate-800">{t('settings.my_identity')}</h3>
+                            </div>
+
+                            <div className="relative z-10">
+                                <div className="bg-slate-50/80 rounded-2xl p-2 border border-slate-100 mb-6">
+                                    <div className="bg-white rounded-xl px-4 py-3 shadow-sm border border-slate-100 flex items-center gap-3">
+                                        <div className="flex-1">
+                                             <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">{t('settings.display_name')}</div>
+                                             <input 
+                                                className="w-full text-lg font-black text-slate-800 outline-none bg-transparent placeholder-slate-300"
+                                                value={editMyName}
+                                                onChange={(e) => setEditMyName(e.target.value)}
+                                            />
+                                        </div>
+                                        <button 
+                                            onClick={handleSaveMyIdentity}
+                                            className="bg-indigo-500 text-white px-4 py-2 rounded-lg font-bold text-sm shadow-md shadow-indigo-200 active:scale-95 transition hover:bg-indigo-600"
+                                        >
+                                            {t('common.save')}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 pl-2">{t('settings.quick_select') || 'Quick Select'}</div>
+                                    <div className="flex flex-wrap gap-2.5">
+                                        {PARENT_ROLES.map(role => (
+                                            <button 
+                                            key={role} 
+                                            onClick={() => { setEditMyName(role); }} 
+                                            className={`px-4 py-2.5 text-sm rounded-xl font-bold border-2 transition-all duration-200 ${
+                                                editMyName === role 
+                                                ? 'bg-indigo-500 text-white border-indigo-500 shadow-lg shadow-indigo-200 transform scale-105' 
+                                                : 'bg-white text-slate-500 border-slate-100 hover:border-indigo-200 hover:bg-indigo-50'
+                                            }`}
+                                            >
+                                                {role}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="bg-white rounded-[2rem] overflow-hidden shadow-sm p-2">

@@ -74,7 +74,8 @@ export const translations = {
       family_id_label: "Your Family ID",
       share_hint: "Share this ID with family members to let them join.",
       logout: "Log Out / Switch Family",
-      language: "Language"
+      language: "Language",
+      quick_select: "Quick Select"
     },
     add_modal: {
       title: "New Memory",
@@ -174,7 +175,8 @@ export const translations = {
       family_id_label: "您的家庭 ID",
       share_hint: "将此 ID 分享给家人以便他们加入。",
       logout: "退出登录 / 切换家庭",
-      language: "语言"
+      language: "语言",
+      quick_select: "快速选择"
     },
     add_modal: {
       title: "新回忆",
@@ -274,7 +276,8 @@ export const translations = {
       family_id_label: "ファミリーID",
       share_hint: "このIDを家族に共有して招待しましょう。",
       logout: "ログアウト / 切り替え",
-      language: "言語"
+      language: "言語",
+      quick_select: "クイック選択"
     },
     add_modal: {
       title: "新しい思い出",
@@ -374,7 +377,8 @@ export const translations = {
       family_id_label: "가족 ID",
       share_hint: "이 ID를 가족에게 공유하세요.",
       logout: "로그아웃 / 가족 변경",
-      language: "언어"
+      language: "언어",
+      quick_select: "빠른 선택"
     },
     add_modal: {
       title: "새 추억",
